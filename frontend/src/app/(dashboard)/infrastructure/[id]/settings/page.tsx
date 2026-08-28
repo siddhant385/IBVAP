@@ -33,7 +33,7 @@ export default async function DeviceSettingsPage(props: { params: Promise<{ id: 
 
   // Find selected camera if provided
   const selectedCamera = selectedCameraId 
-    ? device.cameras?.find(c => c.id === selectedCameraId) 
+    ? device.cameras?.find((c: { id: string }) => c.id === selectedCameraId) 
     : null
 
   // In a real scenario, this would be a recent snapshot from the `alerts` or a dedicated `camera_snapshots` bucket.

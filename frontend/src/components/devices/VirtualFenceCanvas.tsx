@@ -181,12 +181,12 @@ export function VirtualFenceCanvas({
       const currentCameraSettings = (currentCameras[cameraId] as Record<string, unknown>) || {}
 
       const payload: Json = {
-        ...currentSettings,
+        ...(currentSettings as Record<string, Json>),
         cameras: {
-          ...currentCameras,
+          ...(currentCameras as Record<string, Json>),
           [cameraId]: {
-            ...currentCameraSettings,
-            virtual_fences: cameraFences
+            ...(currentCameraSettings as Record<string, Json>),
+            virtual_fences: cameraFences as unknown as Json
           }
         }
       }
