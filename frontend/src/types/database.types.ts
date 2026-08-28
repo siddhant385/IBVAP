@@ -21,6 +21,9 @@ export interface Database {
           evidence_path: string | null
           raw_payload: Json | null
           processed: boolean | null
+          severity: 'info' | 'warning' | 'critical'
+          status: 'unacknowledged' | 'investigating' | 'resolved' | 'false_positive'
+          operator_id: string | null
         }
         Insert: {
           id?: string
@@ -33,6 +36,9 @@ export interface Database {
           evidence_path?: string | null
           raw_payload?: Json | null
           processed?: boolean | null
+          severity?: 'info' | 'warning' | 'critical'
+          status?: 'unacknowledged' | 'investigating' | 'resolved' | 'false_positive'
+          operator_id?: string | null
         }
         Update: {
           id?: string
@@ -45,6 +51,9 @@ export interface Database {
           evidence_path?: string | null
           raw_payload?: Json | null
           processed?: boolean | null
+          severity?: 'info' | 'warning' | 'critical'
+          status?: 'unacknowledged' | 'investigating' | 'resolved' | 'false_positive'
+          operator_id?: string | null
         }
       }
       devices: {
