@@ -34,20 +34,30 @@ export async function updateSession(request: NextRequest) {
   // IMPORTANT: DO NOT USE supabase.auth.getSession() here!
   // It only checks if a token exists in cookies, it does not validate it.
   // getUser() validates the token by calling the Supabase Auth server.
-  await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  // Example: redirect to login if not authenticated and not on public paths
-  /*
+  // Protect all routes inside (dashboard)
+  // If user is NOT logged in and trying to access a protected route (anything other than /login)
   if (
     !user &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/auth')
+    !request.nextUrl.pathname.startsWith('/login')
   ) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
-  */
+
+  // If user IS logged in and trying to access /login, redirect to dashboard
+  if (
+    user &&
+    request.nextUrl.pathname.startsWith('/login')
+  ) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    return NextResponse.redirect(url)
+  }
 
   return supabaseResponse
 }
