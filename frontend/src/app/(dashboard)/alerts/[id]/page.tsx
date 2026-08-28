@@ -228,7 +228,7 @@ export default async function AlertInvestigationPage({ params }: { params: Promi
                 </div>
 
                 <div className="pt-4 border-t border-border/50">
-                  <Accordion type="single" collapsible>
+                  <Accordion>
                     <AccordionItem value="payload" className="border-0">
                       <AccordionTrigger className="hover:no-underline py-2 text-sm font-medium">View Raw JSON Payload</AccordionTrigger>
                       <AccordionContent>

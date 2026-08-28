@@ -26,7 +26,7 @@ export function AlertsFilterBar({ devices, currentParams }: { devices: any[], cu
 
   return (
     <div className="flex flex-wrap items-center gap-2 p-3 bg-card rounded-md border border-border/50">
-      <Select defaultValue={currentParams.date || 'all'} onValueChange={(val) => updateFilter('date', val)}>
+      <Select defaultValue={currentParams.date || 'all'} onValueChange={(val) => updateFilter('date', val || '')}>
         <SelectTrigger className="w-[140px] h-8 text-xs">
           <SelectValue placeholder="Date Range" />
         </SelectTrigger>
@@ -37,7 +37,7 @@ export function AlertsFilterBar({ devices, currentParams }: { devices: any[], cu
         </SelectContent>
       </Select>
 
-      <Select defaultValue={currentParams.severity || 'all'} onValueChange={(val) => updateFilter('severity', val)}>
+      <Select defaultValue={currentParams.severity || 'all'} onValueChange={(val) => updateFilter('severity', val || '')}>
         <SelectTrigger className="w-[140px] h-8 text-xs">
           <SelectValue placeholder="Severity" />
         </SelectTrigger>
@@ -49,7 +49,7 @@ export function AlertsFilterBar({ devices, currentParams }: { devices: any[], cu
         </SelectContent>
       </Select>
 
-      <Select defaultValue={currentParams.status || 'all'} onValueChange={(val) => updateFilter('status', val)}>
+      <Select defaultValue={currentParams.status || 'all'} onValueChange={(val) => updateFilter('status', val || '')}>
         <SelectTrigger className="w-[140px] h-8 text-xs">
           <SelectValue placeholder="Status" />
         </SelectTrigger>
@@ -62,7 +62,7 @@ export function AlertsFilterBar({ devices, currentParams }: { devices: any[], cu
         </SelectContent>
       </Select>
 
-      <Select defaultValue={currentParams.device || 'all'} onValueChange={(val) => updateFilter('device', val)}>
+      <Select defaultValue={currentParams.device || 'all'} onValueChange={(val) => updateFilter('device', val || '')}>
         <SelectTrigger className="w-[160px] h-8 text-xs">
           <SelectValue placeholder="All Devices" />
         </SelectTrigger>

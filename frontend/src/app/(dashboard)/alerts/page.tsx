@@ -115,10 +115,8 @@ export default async function AlertsPage({
           </TableHeader>
           <TableBody>
             {alerts?.map((alert) => {
-              // @ts-expect-error - PostgREST response typing for nested arrays is sometimes tricky
               const hasFaceMatch = alert.face_results?.length > 0
-              // @ts-expect-error - PostgREST nested array
-              const hasPlateMatch = alert.anpr_results?.some(r => r.is_flagged)
+              const hasPlateMatch = alert.anpr_results?.some((r: any) => r.is_flagged)
 
               return (
                 <TableRow key={alert.id} className="hover:bg-muted/20">
