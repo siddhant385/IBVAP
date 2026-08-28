@@ -71,7 +71,7 @@ export async function POST(request: Request) {
         camera_id: cam.camera_id,
         name: cam.name || `Camera ${cam.camera_id}`,
         source_url: cam.source_url,
-        is_active: true
+        is_online: true
       }))
       
       const { error: camError } = await supabaseAdmin.from('cameras').insert(cameraData)

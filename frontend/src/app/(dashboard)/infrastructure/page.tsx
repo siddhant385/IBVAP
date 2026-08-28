@@ -4,7 +4,7 @@ import { InfrastructureGrid } from '@/components/infrastructure/InfrastructureGr
 import { Database } from '@/types/database.types'
 
 type Device = Database['public']['Tables']['devices']['Row'] & {
-  cameras: { id: string; name: string | null; is_active: boolean | null }[] | null
+  cameras: { id: string; name: string | null; is_online: boolean | null }[] | null
 }
 
 export default async function InfrastructurePage() {
@@ -19,7 +19,7 @@ export default async function InfrastructurePage() {
       cameras (
         id,
         name,
-        is_active
+        is_online
       )
     `)
     .order('created_at', { ascending: false })

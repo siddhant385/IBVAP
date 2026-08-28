@@ -95,7 +95,7 @@ Cameras attached to each device.
 | `camera_id` | `text NOT NULL` | Matches edge `camera_id` field in alerts |
 | `name` | `text` | Human-readable label |
 | `source_url` | `text` | RTSP URL (stored encrypted or redacted) |
-| `is_active` | `boolean DEFAULT true` | |
+| `is_online` | `boolean DEFAULT true` | |
 | `created_at` | `timestamptz DEFAULT now()` | |
 | UNIQUE | `(device_id, camera_id)` | |
 

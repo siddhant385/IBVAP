@@ -92,7 +92,7 @@ export interface Database {
           camera_id: string
           name: string | null
           source_url: string | null
-          is_active: boolean | null
+          is_online: boolean | null
           created_at: string | null
         }
         Insert: {
@@ -101,7 +101,7 @@ export interface Database {
           camera_id: string
           name?: string | null
           source_url?: string | null
-          is_active?: boolean | null
+          is_online?: boolean | null
           created_at?: string | null
         }
         Update: {
@@ -110,7 +110,7 @@ export interface Database {
           camera_id?: string
           name?: string | null
           source_url?: string | null
-          is_active?: boolean | null
+          is_online?: boolean | null
           created_at?: string | null
         }
       }

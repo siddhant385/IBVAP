@@ -10,7 +10,7 @@ import { createClient } from '@/utils/supabase/client'
 import { Database } from '@/types/database.types'
 
 type Device = Database['public']['Tables']['devices']['Row'] & {
-  cameras: { id: string; name: string | null; is_active: boolean | null }[] | null
+  cameras: { id: string; name: string | null; is_online: boolean | null }[] | null
 }
 
 export function InfrastructureGrid({ initialDevices }: { initialDevices: Device[] }) {
@@ -48,7 +48,7 @@ export function InfrastructureGrid({ initialDevices }: { initialDevices: Device[
               cameras (
                 id,
                 name,
-                is_active
+                is_online
               )
             `)
             .eq('id', payload.new.id)
@@ -97,8 +97,8 @@ export function InfrastructureGrid({ initialDevices }: { initialDevices: Device[
                   {device.cameras?.map((camera: any) => (
                     <div key={camera.id} className="flex items-center justify-between rounded-md border border-border/50 bg-background/50 p-2 text-sm">
                       <span className="truncate max-w-[150px]">{camera.name}</span>
-                      <Badge variant="outline" className={camera.is_active ? "text-green-500" : "text-muted-foreground"}>
-                        {camera.is_active ? 'Active' : 'Inactive'}
+                      <Badge variant="outline" className={camera.is_online ? "text-green-500" : "text-muted-foreground"}>
+                        {camera.is_online ? 'Active' : 'Inactive'}
                       </Badge>
                     </div>
                   ))}
