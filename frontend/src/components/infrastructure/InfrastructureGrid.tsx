@@ -15,7 +15,8 @@ type Device = Database['public']['Tables']['devices']['Row'] & {
 
 export function InfrastructureGrid({ initialDevices }: { initialDevices: Device[] }) {
   const [devices, setDevices] = useState<Device[]>(initialDevices)
-  const supabase = createClient()
+  // We need to use state for the supabase client so it's not recreated on every render
+  const [supabase] = useState(() => createClient())
 
   useEffect(() => {
     // Subscribe to realtime updates on the devices table
@@ -63,7 +64,7 @@ export function InfrastructureGrid({ initialDevices }: { initialDevices: Device[
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [supabase])
+  }, [])
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -93,7 +94,7 @@ export function InfrastructureGrid({ initialDevices }: { initialDevices: Device[
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">Connected Cameras</h4>
                 <div className="space-y-2">
-                  {device.cameras?.map((camera) => (
+                  {device.cameras?.map((camera: any) => (
                     <div key={camera.id} className="flex items-center justify-between rounded-md border border-border/50 bg-background/50 p-2 text-sm">
                       <span className="truncate max-w-[150px]">{camera.name}</span>
                       <Badge variant="outline" className={camera.is_active ? "text-green-500" : "text-muted-foreground"}>

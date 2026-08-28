@@ -78,7 +78,7 @@ Registered edge devices.
 | `name` | `text` | Human-readable label |
 | `location` | `text` | Deployment site description |
 | `coordinates` | `point` | GPS lat/lon of the device |
-| `api_key_hash` | `text` | bcrypt hash of the device's API key |
+| `auth_user_id` | `uuid` | Reference to the Supabase Auth user ID (FK to auth.users) |
 | `is_online` | `boolean DEFAULT false` | Updated by SSE connection/heartbeat |
 | `last_seen_at` | `timestamptz` | Last alert or heartbeat timestamp |
 | `created_at` | `timestamptz DEFAULT now()` | |
@@ -272,7 +272,7 @@ Content-Type: application/json
 
 **Server Processing Pipeline:**
 
-1. **Authenticate** — Verify `Authorization: Bearer` token against `devices.api_key_hash`.
+1. **Authenticate** — Verify Supabase Auth JWT identity matches `auth_user_id`.
 2. **Validate** — Check required fields, resolve `device_id` string → `devices.id`, auto-register `camera_id` if new.
 3. **Extract evidence** — If any detection has `evidence.jpeg_base64`:
    - Decode base64 → raw JPEG bytes.
@@ -619,7 +619,7 @@ The frontend subscribes to Supabase Realtime channels:
 | Aspect | Implementation |
 |---|---|
 | Method | `Authorization: Bearer <API_KEY>` on every request |
-| Key storage | Edge: `.env` file (gitignored). Server: bcrypt hash in `devices.api_key_hash` |
+| Key storage | Edge: `.env` file (gitignored). Server: natively handled by Supabase Auth (email/password) |
 | Key rotation | Admin generates new key via frontend → old key invalidated → new key shown once |
 | Rate limiting | Per-device: 100 alerts/minute (configurable). Prevents runaway edge from flooding |
 

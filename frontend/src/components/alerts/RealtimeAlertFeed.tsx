@@ -13,7 +13,8 @@ type Alert = Database['public']['Tables']['alerts']['Row'] & {
 
 export function RealtimeAlertFeed() {
   const [alerts, setAlerts] = useState<Alert[]>([])
-  const supabase = createClient()
+  // We need to use state for the supabase client so it's not recreated on every render
+  const [supabase] = useState(() => createClient())
 
   useEffect(() => {
     // Fetch initial latest alerts
