@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Trash2, Save, Undo } from 'lucide-react'
 import { useToastManager } from '@/components/ui/toast'
 import { createClient } from '@/utils/supabase/client'
+import type { Json } from '@/types/database.types'
 
 export interface Point {
   x: number
@@ -155,8 +156,15 @@ export function VirtualFenceCanvas({
     try {
       // Direct Supabase Update
       const version = crypto.randomUUID()
-      const payload = {
-        virtual_fences: polygons
+      const payload: Json = {
+        virtual_fences: polygons.map((polygon) => ({
+          id: polygon.id,
+          label: polygon.label,
+          points: polygon.points.map((point) => ({
+            x: point.x,
+            y: point.y,
+          })),
+        })),
       }
 
       // 1. Check if record exists
@@ -171,7 +179,7 @@ export function VirtualFenceCanvas({
         const { error: updateError } = await supabase
           .from('device_settings')
           .update({
-            settings: payload as any,
+            settings: payload,
             version: version
           })
           .eq('device_id', deviceId)
@@ -181,7 +189,7 @@ export function VirtualFenceCanvas({
           .from('device_settings')
           .insert({
             device_id: deviceId,
-            settings: payload as any,
+            settings: payload,
             version: version
           })
         error = insertError

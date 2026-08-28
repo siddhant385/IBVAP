@@ -1,40 +1,15 @@
-'use client'
-
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/utils/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { AlertTriangle, ShieldCheck } from 'lucide-react'
 
-export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
-  const supabase = createClient()
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError(null)
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (error) {
-      setError(error.message)
-      setIsLoading(false)
-    } else {
-      router.push('/')
-      router.refresh()
-    }
-  }
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>
+}) {
+  const { error } = await searchParams
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4 dark:bg-[#0a0a0c]">
@@ -50,7 +25,7 @@ export default function LoginPage() {
             Authenticate to access the tactical dashboard
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleLogin}>
+        <form action="/auth/login" method="post">
           <CardContent className="space-y-4">
             {error && (
               <div className="flex items-center gap-2 rounded-md bg-destructive/15 p-3 text-sm text-destructive">
@@ -62,10 +37,9 @@ export default function LoginPage() {
               <Label htmlFor="email">Operator ID (Email)</Label>
               <Input
                 id="email"
+                name="email"
                 type="email"
                 placeholder="operator@ibvap.gov"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 required
                 className="bg-background/50"
               />
@@ -74,21 +48,16 @@ export default function LoginPage() {
               <Label htmlFor="password">Passkey</Label>
               <Input
                 id="password"
+                name="password"
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
                 required
                 className="bg-background/50"
               />
             </div>
           </CardContent>
           <CardFooter>
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Authenticating...' : 'Secure Login'}
+            <Button type="submit" className="w-full">
+              Secure Login
             </Button>
           </CardFooter>
         </form>

@@ -2,9 +2,22 @@ import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 
+type CameraInput = {
+  camera_id: string
+  name?: string
+  source_url?: string
+}
+
+type DeviceRegistrationRequest = {
+  device_id?: string
+  name?: string
+  location?: string
+  cameras?: CameraInput[]
+}
+
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
+    const body = (await request.json()) as DeviceRegistrationRequest
     const { device_id, name, location, cameras } = body
 
     if (!device_id) {
@@ -53,7 +66,7 @@ export async function POST(request: Request) {
 
     // 4. Create camera records if provided
     if (cameras && cameras.length > 0) {
-      const cameraData = cameras.map((cam: any) => ({
+      const cameraData = cameras.map((cam) => ({
         device_id: deviceUuid,
         camera_id: cam.camera_id,
         name: cam.name || `Camera ${cam.camera_id}`,
@@ -75,10 +88,11 @@ export async function POST(request: Request) {
       }
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Registration error:', error)
+    const message = error instanceof Error ? error.message : 'Internal server error'
     return NextResponse.json(
-      { detail: error.message || 'Internal server error' },
+      { detail: message },
       { status: 500 }
     )
   }
