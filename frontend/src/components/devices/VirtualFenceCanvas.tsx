@@ -21,10 +21,12 @@ export interface Polygon {
 
 export function VirtualFenceCanvas({ 
   deviceId, 
+  cameraId,
   initialPolygons = [], 
   referenceImageUrl 
 }: { 
   deviceId: string
+  cameraId: string
   initialPolygons?: Polygon[]
   referenceImageUrl: string
 }) {
@@ -154,25 +156,40 @@ export function VirtualFenceCanvas({
 
   const handleSaveSettings = async () => {
     try {
-      // Direct Supabase Update
-      const version = crypto.randomUUID()
-      const payload: Json = {
-        virtual_fences: polygons.map((polygon) => ({
-          id: polygon.id,
-          label: polygon.label,
-          points: polygon.points.map((point) => ({
-            x: point.x,
-            y: point.y,
-          })),
-        })),
-      }
-
-      // 1. Check if record exists
+      // 1. Check if record exists and fetch current settings
       const { data: existing } = await supabase
         .from('device_settings')
-        .select('id')
+        .select('id, settings')
         .eq('device_id', deviceId)
         .single()
+
+      const version = crypto.randomUUID()
+
+      // Build the new polygons structure for the specific camera
+      const cameraFences = polygons.map((polygon) => ({
+        id: polygon.id,
+        label: polygon.label,
+        points: polygon.points.map((point) => ({
+          x: point.x,
+          y: point.y,
+        })),
+      }))
+
+      // Merge with existing settings or create new root
+      const currentSettings = (existing?.settings as Record<string, unknown>) || {}
+      const currentCameras = (currentSettings.cameras as Record<string, unknown>) || {}
+      const currentCameraSettings = (currentCameras[cameraId] as Record<string, unknown>) || {}
+
+      const payload: Json = {
+        ...currentSettings,
+        cameras: {
+          ...currentCameras,
+          [cameraId]: {
+            ...currentCameraSettings,
+            virtual_fences: cameraFences
+          }
+        }
+      }
 
       let error;
       if (existing) {

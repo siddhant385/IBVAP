@@ -1,9 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { DeviceRegistrationForm } from '@/components/devices/DeviceRegistrationForm'
 import { InfrastructureGrid } from '@/components/infrastructure/InfrastructureGrid'
-import { CameraHealthMatrix } from '@/components/infrastructure/CameraHealthMatrix'
 import { Database } from '@/types/database.types'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 type Device = Database['public']['Tables']['devices']['Row'] & {
   cameras: Database['public']['Tables']['cameras']['Row'][] | null
@@ -48,18 +46,7 @@ export default async function InfrastructurePage() {
         </div>
       </div>
 
-      <Tabs defaultValue="devices" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="devices">Devices View</TabsTrigger>
-          <TabsTrigger value="cameras">Cameras Matrix</TabsTrigger>
-        </TabsList>
-        <TabsContent value="devices" className="space-y-4">
-          <InfrastructureGrid initialDevices={devices as Device[]} />
-        </TabsContent>
-        <TabsContent value="cameras" className="space-y-4">
-          <CameraHealthMatrix initialDevices={devices as Device[]} />
-        </TabsContent>
-      </Tabs>
+      <InfrastructureGrid initialDevices={devices as Device[]} />
     </div>
   )
 }
