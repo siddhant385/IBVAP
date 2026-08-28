@@ -10,7 +10,7 @@ import { createClient } from '@/utils/supabase/client'
 import { Database } from '@/types/database.types'
 
 type Device = Database['public']['Tables']['devices']['Row'] & {
-  cameras: { id: string; name: string | null; is_online: boolean | null }[] | null
+  cameras: Database['public']['Tables']['cameras']['Row'][] | null
 }
 
 export function InfrastructureGrid({ initialDevices }: { initialDevices: Device[] }) {
@@ -47,8 +47,11 @@ export function InfrastructureGrid({ initialDevices }: { initialDevices: Device[
               *,
               cameras (
                 id,
+                device_id,
                 name,
-                is_online
+                source_url,
+                is_online,
+                created_at
               )
             `)
             .eq('id', payload.new.id)
@@ -64,7 +67,7 @@ export function InfrastructureGrid({ initialDevices }: { initialDevices: Device[
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [supabase])
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -92,18 +95,33 @@ export function InfrastructureGrid({ initialDevices }: { initialDevices: Device[
               </div>
               
               <div className="space-y-2">
-                <h4 className="text-sm font-medium">Connected Cameras</h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-medium">Connected Cameras</h4>
+                  <Badge variant="secondary" className="font-normal text-xs">
+                    {device.cameras?.length || 0} Total
+                  </Badge>
+                </div>
                 <div className="space-y-2">
-                  {device.cameras?.map((camera: any) => (
-                    <div key={camera.id} className="flex items-center justify-between rounded-md border border-border/50 bg-background/50 p-2 text-sm">
-                      <span className="truncate max-w-[150px]">{camera.name}</span>
-                      <Badge variant="outline" className={camera.is_online ? "text-green-500" : "text-muted-foreground"}>
-                        {camera.is_online ? 'Active' : 'Inactive'}
-                      </Badge>
+                  {device.cameras?.map((camera) => (
+                    <div key={camera.id} className="flex items-center justify-between rounded-md border border-border/50 bg-background/50 p-2 text-sm group transition-colors hover:border-border">
+                      <div className="flex flex-col gap-1">
+                        <span className="truncate max-w-[150px] font-medium">{camera.name}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Badge variant="outline" className={camera.is_online ? "text-green-500 bg-green-500/10" : "text-muted-foreground bg-muted/50"}>
+                          {camera.is_online ? 'Active' : 'Offline'}
+                        </Badge>
+                        <Link href={`/infrastructure/${device.id}/settings?camera=${camera.id}`} passHref>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Settings2 className="h-4 w-4" />
+                            <span className="sr-only">Configure</span>
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
                   ))}
                   {(!device.cameras || device.cameras.length === 0) && (
-                    <div className="text-sm text-muted-foreground italic">No cameras configured.</div>
+                    <div className="text-sm text-muted-foreground italic bg-muted/30 p-3 rounded-md text-center">No cameras configured.</div>
                   )}
                 </div>
               </div>
