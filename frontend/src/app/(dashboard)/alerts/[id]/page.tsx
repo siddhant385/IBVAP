@@ -35,9 +35,13 @@ export default async function AlertInvestigationPage({ params }: { params: Promi
   // 3. Fetch Evidence URL (Signed URL if private, or public URL)
   let imageUrl = null
   if (alert.has_evidence && alert.evidence_path) {
-    // Assuming the bucket is public for simplicity in this demo, otherwise use createSignedUrl
-    const { data } = supabase.storage.from('evidence').getPublicUrl(alert.evidence_path)
-    imageUrl = data.publicUrl
+    const { data, error } = await supabase.storage.from('evidence').createSignedUrl(alert.evidence_path, 3600) // 1 hour expiry
+    if (data) {
+      imageUrl = data.signedUrl
+    } else {
+      console.error('Failed to create signed URL:', error)
+      imageUrl = 'https://images.unsplash.com/photo-1558231221-a3f721524e9f?q=80&w=1200&auto=format&fit=crop'
+    }
   } else {
     // Fallback placeholder for demonstration
     imageUrl = 'https://images.unsplash.com/photo-1558231221-a3f721524e9f?q=80&w=1200&auto=format&fit=crop'
