@@ -59,6 +59,7 @@ export async function POST(request: Request) {
       name: name || `Edge Device ${device_id}`,
       location: location,
       is_online: false,
+      auth_user_id: deviceUuid, // Explicitly link to auth user for RLS checks
       // Note: We no longer store api_key_hash! Supabase Auth handles password hashing internally.
     })
 
