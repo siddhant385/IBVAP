@@ -1,85 +1,72 @@
 import { createClient } from '@/utils/supabase/server'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Activity, ShieldCheck, Users, Video } from 'lucide-react'
 import { RealtimeAlertFeed } from '@/components/alerts/RealtimeAlertFeed'
+import { RealtimeKpiRibbon } from '@/components/dashboard/RealtimeKpiRibbon'
 
 export default async function CommandCenterPage() {
   const supabase = await createClient()
 
-  // Fetch quick stats concurrently
+  // Fetch quick stats concurrently for initial server render
+  const todayStart = new Date(new Date().setHours(0,0,0,0)).toISOString()
+  
   const [
     { count: totalDevices },
     { count: onlineDevices },
-    { count: todayAlerts }
+    { count: todayAlerts },
+    { count: activeThreats },
+    { count: activeCameras },
+    { count: faceMatches },
+    { count: plateMatches }
   ] = await Promise.all([
     supabase.from('devices').select('*', { count: 'exact', head: true }),
     supabase.from('devices').select('*', { count: 'exact', head: true }).eq('is_online', true),
-    supabase.from('alerts').select('*', { count: 'exact', head: true }).gte('timestamp', new Date(new Date().setHours(0,0,0,0)).toISOString())
+    supabase.from('alerts').select('*', { count: 'exact', head: true }).gte('timestamp', todayStart),
+    supabase.from('alerts').select('*', { count: 'exact', head: true })
+      .in('status', ['unacknowledged', 'investigating'])
+      .in('severity', ['warning', 'critical']),
+    supabase.from('cameras').select('*', { count: 'exact', head: true }).eq('is_online', true),
+    supabase.from('face_results').select('*', { count: 'exact', head: true }).not('matched_identity_id', 'is', null),
+    supabase.from('anpr_results').select('*', { count: 'exact', head: true }).eq('is_flagged', true)
   ])
+
+  const totalWatchlistMatches = (faceMatches || 0) + (plateMatches || 0)
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Live Command Center</h2>
-        <p className="text-muted-foreground">
-          Real-time situational awareness across all deployed edge nodes.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Live Command Center</h2>
+          <p className="text-muted-foreground">
+            Real-time situational awareness across all deployed edge nodes.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          {/* Future: Global System Actions */}
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-border/50 bg-card/50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Network Status</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{onlineDevices || 0} / {totalDevices || 0}</div>
-            <p className="text-xs text-muted-foreground">Devices Online</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-border/50 bg-card/50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Alerts (Today)</CardTitle>
-            <ShieldCheck className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{todayAlerts || 0}</div>
-            <p className="text-xs text-muted-foreground">Security events logged</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/50 bg-card/50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Cameras</CardTitle>
-            <Video className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">--</div>
-            <p className="text-xs text-muted-foreground">Monitoring in real-time</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/50 bg-card/50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Watchlist Matches</CardTitle>
-            <Users className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">--</div>
-            <p className="text-xs text-muted-foreground">Faces & Plates flagged</p>
-          </CardContent>
-        </Card>
-      </div>
+      <RealtimeKpiRibbon 
+        initialTotalDevices={totalDevices || 0}
+        initialOnlineDevices={onlineDevices || 0}
+        initialTodayAlerts={todayAlerts || 0}
+        initialActiveThreats={activeThreats || 0}
+        initialActiveCameras={activeCameras || 0}
+        initialWatchlistMatches={totalWatchlistMatches}
+      />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        <div className="col-span-4 rounded-xl border border-border/50 bg-muted/20 flex flex-col items-center justify-center min-h-[600px]">
+        <div className="col-span-4 rounded-xl border border-border/50 bg-muted/20 flex flex-col items-center justify-center min-h-[600px] overflow-hidden relative">
           {/* Placeholder for GIS Map */}
-          <MapPinIcon className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
-          <h3 className="text-lg font-medium text-muted-foreground">Geospatial Intelligence Map</h3>
-          <p className="text-sm text-muted-foreground mt-2 max-w-md text-center">
+          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary via-background to-background"></div>
+          <MapPinIcon className="h-16 w-16 text-primary mb-4 opacity-80 animate-bounce" />
+          <h3 className="text-xl font-medium text-foreground relative z-10">Geospatial Intelligence Map</h3>
+          <p className="text-sm text-muted-foreground mt-2 max-w-md text-center relative z-10">
             Map integration plotting active edge devices (`devices.coordinates`) and correlating recent alert hot-spots.
           </p>
+          <div className="mt-8 flex gap-4 relative z-10">
+            <div className="flex items-center gap-2 text-sm"><span className="h-3 w-3 rounded-full bg-green-500"></span> Online</div>
+            <div className="flex items-center gap-2 text-sm"><span className="h-3 w-3 rounded-full bg-destructive animate-pulse"></span> Alerting</div>
+            <div className="flex items-center gap-2 text-sm"><span className="h-3 w-3 rounded-full bg-muted-foreground"></span> Offline</div>
+          </div>
         </div>
         
         <div className="col-span-3">
