@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { AlertTriangle, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { FaceUploadForm } from '@/components/watchlist/FaceUploadForm'
+import { RemoveFaceButton } from '@/components/watchlist/RemoveFaceButton'
 
 export default async function WatchlistFacesPage() {
   const supabase = await createClient()
@@ -73,7 +74,7 @@ export default async function WatchlistFacesPage() {
               </p>
               <div className="flex justify-between items-center mt-4">
                 <Badge variant="outline" className="text-xs">ID: {face.id.split('-')[0]}</Badge>
-                <Button variant="ghost" size="sm" className="text-destructive">Remove</Button>
+                <RemoveFaceButton faceId={face.id} imagePath={face.reference_image_path} />
               </div>
             </CardContent>
           </Card>
