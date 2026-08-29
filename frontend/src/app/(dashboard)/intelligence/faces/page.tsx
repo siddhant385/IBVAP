@@ -2,7 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { FaceUploadForm } from '@/components/watchlist/FaceUploadForm'
 
@@ -51,9 +51,16 @@ export default async function WatchlistFacesPage() {
                   No Image
                 </div>
               )}
-              {face.threat_level === 'critical' && (
-                <div className="absolute top-2 right-2 bg-destructive text-destructive-foreground px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1 shadow-lg">
-                  <AlertTriangle className="h-3 w-3" /> CRITICAL
+              {face.threat_level && face.threat_level !== 'none' && (
+                <div className={`absolute top-2 right-2 px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1 shadow-lg ${face.threat_level === 'critical' ? 'bg-destructive text-destructive-foreground' : 'bg-amber-500 text-white'}`}>
+                  {face.threat_level === 'critical' && <AlertTriangle className="h-3 w-3" />} 
+                  {face.threat_level.toUpperCase()}
+                </div>
+              )}
+              {!face.face_embedding && (
+                <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex flex-col items-center justify-center text-center p-4">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                  <p className="text-sm font-medium">Processing AI Embedding...</p>
                 </div>
               )}
             </div>
