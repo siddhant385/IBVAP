@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  ai-worker-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ibvap-ai-worker
+    container_name: ibvap-ai-worker-1
+    env_file:
+      - .env
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+
+  ai-worker-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ibvap-ai-worker
+    container_name: ibvap-ai-worker-2
+    env_file:
+      - .env
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G

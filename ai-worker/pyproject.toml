@@ -1,0 +1,31 @@
+[project]
+name = "ai-worker"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = "<3.13,>=3.12"
+dependencies = [
+    "gotrue>=2.12.4",
+    "insightface>=1.0.1",
+    "numpy>=2.5.2",
+    "onnxruntime>=1.29.0",
+    "opencv-python>=5.0.0.93",
+    "postgrest>=2.31.0",
+    "pydantic>=2.13.5",
+    "pydantic-settings>=2.15.0",
+    "pytest-asyncio>=1.4.0",
+    "python-dotenv>=1.2.3",
+    "realtime>=2.31.0",
+    "storage3>=2.31.0",
+    "supabase>=2.31.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

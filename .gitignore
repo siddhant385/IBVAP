@@ -23,11 +23,10 @@ Thumbs.db
 AGENTS.md
 
 # Project specific
-backend/__pycache__/
-backend/.venv/
-backend/.ruff_cache/
-backend/server.log
-backend/sse_output.log
+ai-worker/__pycache__/
+ai-worker/.venv/
+ai-worker/.ruff_cache/
+ai-worker/.pytest_cache/
 
 frontend/.next/
 frontend/node_modules/
