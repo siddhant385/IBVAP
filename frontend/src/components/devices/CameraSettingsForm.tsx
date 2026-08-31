@@ -20,22 +20,6 @@ export function CameraSettingsForm({ cameraId, initialSettings }: { cameraId: st
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      // First ensure the camera exists
-      const { error: cameraError } = await supabase
-        .from('cameras')
-        .select('id')
-        .eq('id', cameraId)
-        .single()
-
-      if (cameraError && cameraError.code === 'PGRST116') { // not found
-        toast.add({ title: "Error", description: "Camera not found. Please create the camera first." })
-        setIsSaving(false)
-        return
-      } else if (cameraError) {
-        throw cameraError
-      }
-
-      // If camera exists, proceed to insert/update settings
       const { error } = await supabase
         .from('camera_settings')
         .upsert({

@@ -28,17 +28,17 @@ export default async function DeviceSettingsPage(props: { params: Promise<{ id: 
 
   // Find selected camera if provided
   const selectedCamera = selectedCameraId 
-    ? device.cameras?.find((c: { id: string }) => c.id === selectedCameraId) 
+    ? device.cameras?.find((c: { id: string, camera_id: string, name: string | null }) => c.id === selectedCameraId) 
     : null
 
   // Fetch camera settings
   let cameraSettings = null
-  if (selectedCameraId) {
+  if (selectedCamera?.camera_id) {
     const { data: camSettingsData } = await supabase
       .from('camera_settings')
       .select('settings')
-      .eq('camera_id', selectedCameraId)
-      .single()
+      .eq('camera_id', selectedCamera.camera_id)
+      .maybeSingle()
     
     cameraSettings = camSettingsData?.settings || {}
   }
@@ -110,22 +110,22 @@ export default async function DeviceSettingsPage(props: { params: Promise<{ id: 
           <DeviceCameraMatrix deviceId={deviceId} initialCameras={device.cameras || []} />
         </TabsContent>
 
-        {selectedCameraId && (
+        {selectedCamera && selectedCamera.camera_id && (
           <TabsContent value="general" className="space-y-4">
             <CameraSettingsForm 
-              cameraId={selectedCameraId} 
+              cameraId={selectedCamera.camera_id} 
               initialSettings={cameraSettings} 
             />
           </TabsContent>
         )}
         
-        {selectedCameraId && (
+        {selectedCamera && selectedCamera.camera_id && (
           <TabsContent value="fences" className="space-y-4">
             <VirtualFenceCanvas 
               deviceId={deviceId} 
-              cameraId={selectedCameraId}
+              cameraId={selectedCamera.camera_id}
               initialPolygons={existingPolygons}
-              hardwareCameraId={selectedCamera?.camera_id}
+              hardwareCameraId={selectedCamera.camera_id}
               hardwareDeviceId={device.device_id}
             />
           </TabsContent>
