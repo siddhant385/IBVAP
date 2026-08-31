@@ -20,15 +20,19 @@ export interface Polygon {
 }
 
 export function VirtualFenceCanvas({ 
-  deviceId, 
+  deviceId,
   cameraId,
+  hardwareDeviceId,
+  hardwareCameraId,
   initialPolygons = [], 
   referenceImageUrl 
 }: { 
-  deviceId: string
+  deviceId?: string
   cameraId: string
+  hardwareDeviceId?: string
+  hardwareCameraId?: string
   initialPolygons?: Polygon[]
-  referenceImageUrl: string
+  referenceImageUrl?: string
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -36,6 +40,12 @@ export function VirtualFenceCanvas({
   const [currentPolygon, setCurrentPolygon] = useState<Point[]>([])
   const [isDrawing, setIsDrawing] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
+  
+  // Snapshot states
+  const [snapshotUrl, setSnapshotUrl] = useState<string | null>(referenceImageUrl || null)
+  const [isRequestingSnapshot, setIsRequestingSnapshot] = useState(false)
+  const [snapshotStatus, setSnapshotStatus] = useState<string>('')
+  
   const toast = useToastManager()
   const supabase = createClient()
 
@@ -77,9 +87,11 @@ export function VirtualFenceCanvas({
       })
     }
 
-    const drawCanvas = (ctx: CanvasRenderingContext2D, img: HTMLImageElement, width: number, height: number) => {
+    const drawCanvas = (ctx: CanvasRenderingContext2D, img: HTMLImageElement | null, width: number, height: number) => {
       ctx.clearRect(0, 0, width, height)
-      ctx.drawImage(img, 0, 0, width, height)
+      if (img) {
+         ctx.drawImage(img, 0, 0, width, height)
+      }
   
       // Draw saved polygons
       polygons.forEach((poly) => {
@@ -89,11 +101,6 @@ export function VirtualFenceCanvas({
       // Draw current polygon being built
       if (currentPolygon.length > 0) {
         drawPolygon(ctx, currentPolygon, width, height, 'rgba(59, 130, 246, 0.4)', '#3b82f6', !isDrawing)
-        
-        // Draw connection line to mouse if drawing
-        if (isDrawing && currentPolygon.length > 0) {
-          // We'd need mouse tracking for this, simplified for now
-        }
       }
     }
 
@@ -104,8 +111,17 @@ export function VirtualFenceCanvas({
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    if (!snapshotUrl) {
+      setImageLoaded(false)
+      // clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      drawCanvas(ctx, null, canvas.width, canvas.height)
+      return
+    }
+
     const img = new Image()
-    img.src = referenceImageUrl
+    img.crossOrigin = "Anonymous"
+    img.src = snapshotUrl
     img.onload = () => {
       // Scale canvas to fit container while maintaining aspect ratio
       const ratio = img.width / img.height
@@ -118,7 +134,12 @@ export function VirtualFenceCanvas({
       setImageLoaded(true)
       drawCanvas(ctx, img, canvas.width, canvas.height)
     }
-  }, [referenceImageUrl, polygons, currentPolygon, isDrawing]) // Redraw when these change
+    img.onerror = () => {
+       setImageLoaded(false)
+       ctx.clearRect(0, 0, canvas.width, canvas.height)
+       drawCanvas(ctx, null, canvas.width, canvas.height)
+    }
+  }, [snapshotUrl, polygons, currentPolygon, isDrawing]) // Redraw when these change
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!imageLoaded) return
@@ -154,18 +175,103 @@ export function VirtualFenceCanvas({
     setIsDrawing(false)
   }
 
+  const handleRequestSnapshot = async () => {
+    if (!hardwareDeviceId) {
+      toast.add({ title: "Error", description: "Hardware Device ID is missing." })
+      return
+    }
+
+    setIsRequestingSnapshot(true)
+    setSnapshotStatus('Requesting snapshot from edge device...')
+
+    try {
+      // 1. Insert command into device_commands
+      const commandId = crypto.randomUUID()
+      const { error: insertError } = await supabase
+        .from('device_commands')
+        .insert({
+          id: commandId,
+          device_id: hardwareDeviceId,
+          camera_id: hardwareCameraId || null,
+          command: 'snapshot',
+          status: 'pending',
+          payload: {}
+        })
+
+      if (insertError) throw insertError
+
+      // 2. Listen for changes to this specific command
+      let timeoutId: NodeJS.Timeout
+
+      const channel = supabase
+        .channel(`command_${commandId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'device_commands',
+            filter: `id=eq.${commandId}`,
+          },
+          (payload) => {
+            const updatedCommand = payload.new
+            if (updatedCommand.status === 'completed') {
+              clearTimeout(timeoutId)
+              supabase.removeChannel(channel)
+              
+              // Extract image from result (assuming result.image_url or result.data)
+              const resultData = updatedCommand.result as any
+              if (resultData && resultData.image_url) {
+                setSnapshotUrl(resultData.image_url)
+                setSnapshotStatus('Snapshot received.')
+                toast.add({ title: "Success", description: "Snapshot updated." })
+              } else {
+                setSnapshotStatus('Snapshot completed but no image URL was found.')
+                toast.add({ title: "Warning", description: "No image data returned." })
+              }
+              setIsRequestingSnapshot(false)
+            } else if (updatedCommand.status === 'failed') {
+              clearTimeout(timeoutId)
+              supabase.removeChannel(channel)
+              setSnapshotStatus('Edge device failed to take snapshot.')
+              setIsRequestingSnapshot(false)
+              toast.add({ title: "Error", description: "Snapshot failed on edge." })
+            }
+          }
+        )
+        .subscribe()
+
+      // 3. Set a timeout in case the edge device is offline
+      timeoutId = setTimeout(() => {
+        supabase.removeChannel(channel)
+        setIsRequestingSnapshot(false)
+        setSnapshotStatus('Snapshot request timed out (Edge device might be offline).')
+        toast.add({ title: "Timeout", description: "Edge device did not respond in time." })
+        
+        // Optionally update the row to 'failed' or 'timeout'
+        supabase.from('device_commands').update({ status: 'timeout' }).eq('id', commandId).then()
+      }, 30000) // 30 seconds
+
+    } catch (error) {
+      console.error(error)
+      setSnapshotStatus('Failed to send command.')
+      setIsRequestingSnapshot(false)
+      toast.add({ title: "Error", description: "Failed to request snapshot." })
+    }
+  }
+
   const handleSaveSettings = async () => {
     try {
-      // 1. Check if record exists and fetch current settings
+      // Fetch current camera settings
       const { data: existing } = await supabase
-        .from('device_settings')
+        .from('camera_settings')
         .select('id, settings')
-        .eq('device_id', deviceId)
+        .eq('camera_id', cameraId)
         .single()
 
       const version = crypto.randomUUID()
 
-      // Build the new polygons structure for the specific camera
+      // Build the new polygons structure
       const cameraFences = polygons.map((polygon) => ({
         id: polygon.id,
         label: polygon.label,
@@ -175,54 +281,33 @@ export function VirtualFenceCanvas({
         })),
       }))
 
-      // Merge with existing settings or create new root
+      // Merge with existing settings
       const currentSettings = (existing?.settings as Record<string, unknown>) || {}
-      const currentCameras = (currentSettings.cameras as Record<string, unknown>) || {}
-      const currentCameraSettings = (currentCameras[cameraId] as Record<string, unknown>) || {}
 
       const payload: Json = {
         ...(currentSettings as Record<string, Json>),
-        cameras: {
-          ...(currentCameras as Record<string, Json>),
-          [cameraId]: {
-            ...(currentCameraSettings as Record<string, Json>),
-            virtual_fences: cameraFences as unknown as Json
-          }
-        }
+        virtual_fences: cameraFences as unknown as Json
       }
 
-      let error;
-      if (existing) {
-        const { error: updateError } = await supabase
-          .from('device_settings')
-          .update({
-            settings: payload,
-            version: version
-          })
-          .eq('device_id', deviceId)
-        error = updateError
-      } else {
-        const { error: insertError } = await supabase
-          .from('device_settings')
-          .insert({
-            device_id: deviceId,
-            settings: payload,
-            version: version
-          })
-        error = insertError
-      }
+      const { error } = await supabase
+        .from('camera_settings')
+        .upsert({
+          camera_id: cameraId,
+          settings: payload,
+          version: version
+        }, { onConflict: 'camera_id' })
 
       if (error) throw error
       
       toast.add({
-        title: "Settings Saved",
+        title: "Zones Saved",
         description: "Virtual fences pushed to edge device."
       })
     } catch (error) {
       console.error(error)
       toast.add({
         title: "Error",
-        description: "Failed to push settings to edge."
+        description: "Failed to save virtual fences."
       })
     }
   }
@@ -233,21 +318,37 @@ export function VirtualFenceCanvas({
         <CardHeader className="bg-muted/50 py-3">
           <CardTitle className="text-base flex items-center justify-between">
             <span>Draw Region of Interest (ROI)</span>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
               {isDrawing && (
                 <Button size="sm" variant="secondary" onClick={handleFinishPolygon}>
                   Complete Shape
                 </Button>
               )}
+              <Button size="sm" variant="outline" onClick={handleRequestSnapshot} disabled={isRequestingSnapshot}>
+                {isRequestingSnapshot ? "Requesting..." : "Fetch Live Snapshot"}
+              </Button>
             </div>
           </CardTitle>
+          {snapshotStatus && (
+            <CardDescription className={isRequestingSnapshot ? "animate-pulse" : ""}>
+              {snapshotStatus}
+            </CardDescription>
+          )}
         </CardHeader>
         <CardContent className="p-0">
           <div 
             ref={containerRef} 
             className="relative w-full cursor-crosshair bg-black/90 min-h-[400px] flex items-center justify-center"
           >
-            {!imageLoaded && <div className="text-muted-foreground animate-pulse">Loading camera feed...</div>}
+            {!imageLoaded && (
+              <div className="text-muted-foreground flex flex-col items-center">
+                {isRequestingSnapshot ? (
+                  <span className="animate-pulse">Waiting for edge device...</span>
+                ) : (
+                  <span>No recent snapshot. Request one to start drawing.</span>
+                )}
+              </div>
+            )}
             <canvas
               ref={canvasRef}
               onClick={handleCanvasClick}

@@ -111,7 +111,7 @@ export function DeviceCameraMatrix({ deviceId, initialCameras }: { deviceId: str
                 <Link href={`/infrastructure/${deviceId}/settings?camera=${camera.id}`} passHref>
                   <Button variant="ghost" size="sm" className="gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Settings2 className="h-4 w-4" />
-                    <span className="hidden sm:inline">Edit Fences</span>
+                    <span className="hidden sm:inline">Settings</span>
                   </Button>
                 </Link>
               </TableCell>

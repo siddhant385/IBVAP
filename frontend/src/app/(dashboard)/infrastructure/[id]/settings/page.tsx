@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { VirtualFenceCanvas, type Polygon } from '@/components/devices/VirtualFenceCanvas'
 import { DeviceCameraMatrix } from '@/components/infrastructure/DeviceCameraMatrix'
+import { CameraSettingsForm } from '@/components/devices/CameraSettingsForm'
 import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -25,29 +26,32 @@ export default async function DeviceSettingsPage(props: { params: Promise<{ id: 
     notFound()
   }
 
-  const { data: settings } = await supabase
-    .from('device_settings')
-    .select('settings')
-    .eq('device_id', deviceId)
-    .single()
-
   // Find selected camera if provided
   const selectedCamera = selectedCameraId 
     ? device.cameras?.find((c: { id: string }) => c.id === selectedCameraId) 
     : null
 
+  // Fetch camera settings
+  let cameraSettings = null
+  if (selectedCameraId) {
+    const { data: camSettingsData } = await supabase
+      .from('camera_settings')
+      .select('settings')
+      .eq('camera_id', selectedCameraId)
+      .single()
+    
+    cameraSettings = camSettingsData?.settings || {}
+  }
+
   // In a real scenario, this would be a recent snapshot from the `alerts` or a dedicated `camera_snapshots` bucket.
   const placeholderImageUrl = 'https://images.unsplash.com/photo-1558231221-a3f721524e9f?q=80&w=1200&auto=format&fit=crop'
   
-  // Parse existing polygons for the selected camera from nested settings
+  // Parse existing polygons for the selected camera from the camera_settings JSON
   let existingPolygons: Polygon[] = []
-  if (selectedCameraId && settings?.settings && typeof settings.settings === 'object') {
-    const rootSettings = settings.settings as Record<string, unknown>
-    if (rootSettings.cameras && (rootSettings.cameras as Record<string, unknown>)[selectedCameraId]) {
-      const cameraSettings = (rootSettings.cameras as Record<string, unknown>)[selectedCameraId] as Record<string, unknown>
-      if (cameraSettings.virtual_fences) {
-        existingPolygons = cameraSettings.virtual_fences as Polygon[]
-      }
+  if (cameraSettings && typeof cameraSettings === 'object') {
+    const rootSettings = cameraSettings as Record<string, unknown>
+    if (rootSettings.virtual_fences) {
+      existingPolygons = rootSettings.virtual_fences as Polygon[]
     }
   }
 
@@ -65,28 +69,14 @@ export default async function DeviceSettingsPage(props: { params: Promise<{ id: 
         </div>
       </div>
 
-      <Tabs defaultValue={selectedCameraId ? "fences" : "cameras"} className="space-y-4">
+      <Tabs defaultValue={selectedCameraId ? "general" : "info"} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="cameras">Cameras</TabsTrigger>
-          {selectedCameraId && <TabsTrigger value="fences">Virtual Fences ({selectedCamera?.name || 'Selected Camera'})</TabsTrigger>}
           <TabsTrigger value="info">Device Info</TabsTrigger>
+          <TabsTrigger value="cameras">Cameras</TabsTrigger>
+          {selectedCameraId && <TabsTrigger value="general">Camera Settings ({selectedCamera?.name || 'Selected'})</TabsTrigger>}
+          {selectedCameraId && <TabsTrigger value="fences">Virtual Fences</TabsTrigger>}
         </TabsList>
         
-        <TabsContent value="cameras" className="space-y-4">
-          <DeviceCameraMatrix deviceId={deviceId} initialCameras={device.cameras || []} />
-        </TabsContent>
-        
-        {selectedCameraId && (
-          <TabsContent value="fences" className="space-y-4">
-            <VirtualFenceCanvas 
-              deviceId={deviceId} 
-              cameraId={selectedCameraId}
-              referenceImageUrl={placeholderImageUrl}
-              initialPolygons={existingPolygons}
-            />
-          </TabsContent>
-        )}
-
         <TabsContent value="info" className="space-y-4">
           <Card>
             <CardHeader>
@@ -115,6 +105,31 @@ export default async function DeviceSettingsPage(props: { params: Promise<{ id: 
             </CardContent>
           </Card>
         </TabsContent>
+        
+        <TabsContent value="cameras" className="space-y-4">
+          <DeviceCameraMatrix deviceId={deviceId} initialCameras={device.cameras || []} />
+        </TabsContent>
+
+        {selectedCameraId && (
+          <TabsContent value="general" className="space-y-4">
+            <CameraSettingsForm 
+              cameraId={selectedCameraId} 
+              initialSettings={cameraSettings} 
+            />
+          </TabsContent>
+        )}
+        
+        {selectedCameraId && (
+          <TabsContent value="fences" className="space-y-4">
+            <VirtualFenceCanvas 
+              deviceId={deviceId} 
+              cameraId={selectedCameraId}
+              initialPolygons={existingPolygons}
+              hardwareCameraId={selectedCamera?.camera_id}
+              hardwareDeviceId={device.device_id}
+            />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )
