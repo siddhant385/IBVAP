@@ -186,19 +186,19 @@ export function VirtualFenceCanvas({
 
     try {
       // 1. Insert command into device_commands
-      const commandId = crypto.randomUUID()
-      const { error: insertError } = await supabase
+      const { data, error: insertError } = await supabase
         .from('device_commands')
         .insert({
-          id: commandId,
           device_id: hardwareDeviceId,
           camera_id: hardwareCameraId || null,
           command: 'snapshot',
           status: 'pending',
           payload: {}
-        })
+        }).select()
 
       if (insertError) throw insertError
+      const commandId = data?.[0]?.id
+      if (!commandId) throw new Error('No command ID returned from backend')
 
       // 2. Listen for changes to this specific command
       let timeoutId: NodeJS.Timeout
