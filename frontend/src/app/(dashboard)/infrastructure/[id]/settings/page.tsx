@@ -1,12 +1,13 @@
 import { createClient } from '@/utils/supabase/server'
-import { VirtualFenceCanvas, type Polygon } from '@/components/devices/VirtualFenceCanvas'
-import { DeviceCameraMatrix } from '@/components/infrastructure/DeviceCameraMatrix'
 import { CameraSettingsForm } from '@/components/devices/CameraSettingsForm'
+import { DeviceCameraMatrix } from '@/components/infrastructure/DeviceCameraMatrix'
 import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Camera, Cpu, Wifi, WifiOff } from 'lucide-react'
 
 export default async function DeviceSettingsPage(props: { params: Promise<{ id: string }>, searchParams: Promise<{ camera?: string }> }) {
   const supabase = await createClient()
@@ -28,7 +29,7 @@ export default async function DeviceSettingsPage(props: { params: Promise<{ id: 
 
   // Find selected camera if provided
   const selectedCamera = selectedCameraId 
-    ? device.cameras?.find((c: { id: string, camera_id: string, name: string | null }) => c.id === selectedCameraId) 
+    ? device.cameras?.find((c: { id: string, camera_id: string, name: string | null, is_online?: boolean }) => c.id === selectedCameraId) 
     : null
 
   // Fetch camera settings
@@ -43,94 +44,100 @@ export default async function DeviceSettingsPage(props: { params: Promise<{ id: 
     cameraSettings = camSettingsData?.settings || {}
   }
 
-  // In a real scenario, this would be a recent snapshot from the `alerts` or a dedicated `camera_snapshots` bucket.
-  const placeholderImageUrl = 'https://images.unsplash.com/photo-1558231221-a3f721524e9f?q=80&w=1200&auto=format&fit=crop'
-  
-  // Parse existing polygons for the selected camera from the camera_settings JSON
-  let existingPolygons: Polygon[] = []
-  if (cameraSettings && typeof cameraSettings === 'object') {
-    const rootSettings = cameraSettings as Record<string, unknown>
-    if (rootSettings.virtual_fences) {
-      existingPolygons = rootSettings.virtual_fences as Polygon[]
-    }
-  }
-
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/infrastructure" className="rounded-md p-2 hover:bg-muted text-muted-foreground transition-colors">
-          <ChevronLeft className="h-5 w-5" />
-        </Link>
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Configure: {device.name}</h2>
-          <p className="text-muted-foreground">
-            ID: {device.device_id}
-          </p>
+    <div className="space-y-6 pb-8">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4">
+          <Link 
+            href="/infrastructure" 
+            className="rounded-lg p-2 hover:bg-muted text-muted-foreground transition-colors"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Link>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">{device.name || 'Unnamed Device'}</h2>
+            <p className="text-muted-foreground text-sm font-mono">
+              {device.device_id}
+            </p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {device.is_online ? (
+            <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30">
+              <Wifi className="h-3 w-3 mr-1" />
+              Online
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="bg-zinc-500/10 text-zinc-500 border-zinc-500/30">
+              <WifiOff className="h-3 w-3 mr-1" />
+              Offline
+            </Badge>
+          )}
         </div>
       </div>
 
-      <Tabs defaultValue={selectedCameraId ? "general" : "info"} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="info">Device Info</TabsTrigger>
-          <TabsTrigger value="cameras">Cameras</TabsTrigger>
-          {selectedCameraId && <TabsTrigger value="general">Camera Settings ({selectedCamera?.name || 'Selected'})</TabsTrigger>}
-          {selectedCameraId && <TabsTrigger value="fences">Virtual Fences</TabsTrigger>}
-        </TabsList>
-        
-        <TabsContent value="info" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Device Information</CardTitle>
-              <CardDescription>General settings and metadata for this edge node.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="font-medium text-muted-foreground">Location</p>
-                  <p>{device.location || 'Not set'}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-muted-foreground">Status</p>
-                  <p>{device.is_online ? 'Online' : 'Offline'}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-muted-foreground">Last Seen</p>
-                  <p>{device.last_seen_at ? new Date(device.last_seen_at).toLocaleString() : 'Never'}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-muted-foreground">Internal Device ID</p>
-                  <p className="font-mono text-xs">{device.device_id}</p>
-                </div>
+      {/* Camera Selection or Settings */}
+      {selectedCamera ? (
+        <CameraSettingsForm 
+          cameraId={selectedCamera.camera_id}
+          hardwareDeviceId={device.device_id}
+          hardwareCameraId={selectedCamera.camera_id}
+          initialSettings={cameraSettings}
+        />
+      ) : (
+        <Card className="border-border/50">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-primary/10">
+                <Camera className="h-5 w-5 text-primary" />
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="cameras" className="space-y-4">
-          <DeviceCameraMatrix deviceId={deviceId} initialCameras={device.cameras || []} />
-        </TabsContent>
-
-        {selectedCamera && selectedCamera.camera_id && (
-          <TabsContent value="general" className="space-y-4">
-            <CameraSettingsForm 
-              cameraId={selectedCamera.camera_id} 
-              initialSettings={cameraSettings} 
-            />
-          </TabsContent>
-        )}
-        
-        {selectedCamera && selectedCamera.camera_id && (
-          <TabsContent value="fences" className="space-y-4">
-            <VirtualFenceCanvas 
+              <div>
+                <CardTitle>Select a Camera</CardTitle>
+                <CardDescription>
+                  Choose a camera from the list below to configure its settings
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <DeviceCameraMatrix 
               deviceId={deviceId} 
-              cameraId={selectedCamera.camera_id}
-              initialPolygons={existingPolygons}
-              hardwareCameraId={selectedCamera.camera_id}
-              hardwareDeviceId={device.device_id}
+              initialCameras={device.cameras || []} 
+              showSelectButton={true}
             />
-          </TabsContent>
-        )}
-      </Tabs>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Device Info Card - Always visible */}
+      {selectedCamera && (
+        <Card className="border-border/50 bg-muted/30">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Cpu className="h-4 w-4" />
+                  <span>Device: {device.name || device.device_id}</span>
+                </div>
+                <div className="h-4 w-px bg-border" />
+                <Link 
+                  href={`/infrastructure/${deviceId}/settings`}
+                  className="text-sm text-primary hover:underline"
+                >
+                  Switch camera
+                </Link>
+              </div>
+              {device.last_seen_at && (
+                <span className="text-xs text-muted-foreground">
+                  Last seen: {new Date(device.last_seen_at).toLocaleString()}
+                </span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

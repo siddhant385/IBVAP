@@ -7,15 +7,10 @@ import { useToastManager } from '@/components/ui/toast'
 import { createClient } from '@/utils/supabase/client'
 import type { Json } from '@/types/database.types'
 
-export interface Point {
+// Type for border line point
+export interface BorderPoint {
   x: number
   y: number
-}
-
-export interface Polygon {
-  id: string
-  label: string
-  points: Point[]
 }
 
 // Type for command result from edge device
@@ -28,31 +23,41 @@ interface CommandResult {
 // Snapshot request timeout in milliseconds
 const SNAPSHOT_TIMEOUT_MS = 30000
 
-interface VirtualFenceCanvasProps {
+interface VirtualBorderCanvasProps {
   deviceId?: string
   cameraId: string
   hardwareDeviceId?: string
   hardwareCameraId?: string
-  initialPolygons?: Polygon[]
+  initialBorderLine?: Array<[number, number]> | null
   referenceImageUrl?: string
-  onSave?: (polygons: Polygon[]) => void | Promise<void>
+  onSave?: (borderLine: Array<[number, number]> | null) => void | Promise<void>
   embedded?: boolean
 }
 
-export function VirtualFenceCanvas({ 
+export function VirtualBorderCanvas({
   deviceId,
   cameraId,
   hardwareDeviceId,
   hardwareCameraId,
-  initialPolygons = [], 
+  initialBorderLine = null,
   referenceImageUrl,
   onSave,
   embedded = false
-}: VirtualFenceCanvasProps) {
+}: VirtualBorderCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const [polygons, setPolygons] = useState<Polygon[]>(initialPolygons)
-  const [currentPolygon, setCurrentPolygon] = useState<Point[]>([])
+  
+  // Convert initial border line to internal format
+  const parseInitialBorderLine = (): BorderPoint[] | null => {
+    if (!initialBorderLine || initialBorderLine.length !== 2) return null
+    return [
+      { x: initialBorderLine[0][0], y: initialBorderLine[0][1] },
+      { x: initialBorderLine[1][0], y: initialBorderLine[1][1] }
+    ]
+  }
+  
+  const [borderPoints, setBorderPoints] = useState<BorderPoint[] | null>(parseInitialBorderLine())
+  const [currentPoints, setCurrentPoints] = useState<BorderPoint[]>([])
   const [isDrawing, setIsDrawing] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
   
@@ -79,15 +84,14 @@ export function VirtualFenceCanvas({
     }
   }, [])
 
-  // Draw polygon on canvas
-  const drawPolygon = useCallback((
-    ctx: CanvasRenderingContext2D, 
-    points: Point[], 
-    width: number, 
-    height: number, 
-    fillColor: string, 
-    strokeColor: string,
-    closePath: boolean = true
+  // Draw border line on canvas
+  const drawBorderLine = useCallback((
+    ctx: CanvasRenderingContext2D,
+    points: BorderPoint[],
+    width: number,
+    height: number,
+    color: string,
+    isDraft: boolean = false
   ) => {
     if (points.length === 0) return
 
@@ -98,33 +102,67 @@ export function VirtualFenceCanvas({
       ctx.lineTo(points[i].x * width, points[i].y * height)
     }
 
-    if (closePath && points.length > 2) {
-      ctx.closePath()
-      ctx.fillStyle = fillColor
-      ctx.fill()
-    }
-
-    ctx.strokeStyle = strokeColor
-    ctx.lineWidth = 3
+    ctx.strokeStyle = color
+    ctx.lineWidth = isDraft ? 2 : 4
+    ctx.setLineDash(isDraft ? [8, 4] : [])
     ctx.stroke()
+    ctx.setLineDash([])
 
-    // Draw vertex points with labels
+    // Draw endpoint markers
     points.forEach((p, index) => {
+      const px = p.x * width
+      const py = p.y * height
+      
+      // Outer ring
       ctx.beginPath()
-      ctx.arc(p.x * width, p.y * height, 6, 0, Math.PI * 2)
-      ctx.fillStyle = strokeColor
+      ctx.arc(px, py, 10, 0, Math.PI * 2)
+      ctx.fillStyle = index === 0 ? 'rgba(34, 197, 94, 0.3)' : 'rgba(59, 130, 246, 0.3)'
+      ctx.fill()
+      
+      // Inner dot
+      ctx.beginPath()
+      ctx.arc(px, py, 6, 0, Math.PI * 2)
+      ctx.fillStyle = index === 0 ? '#22c55e' : '#3b82f6'
       ctx.fill()
       ctx.strokeStyle = '#ffffff'
       ctx.lineWidth = 2
       ctx.stroke()
       
-      // Draw point number
+      // Label
       ctx.fillStyle = '#ffffff'
       ctx.font = 'bold 10px sans-serif'
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-      ctx.fillText((index + 1).toString(), p.x * width, p.y * height)
+      ctx.fillText(index === 0 ? 'A' : 'B', px, py)
     })
+
+    // Draw directional arrow for completed lines
+    if (!isDraft && points.length >= 2) {
+      const startX = points[0].x * width
+      const startY = points[0].y * height
+      const endX = points[1].x * width
+      const endY = points[1].y * height
+      const midX = (startX + endX) / 2
+      const midY = (startY + endY) / 2
+      
+      // Arrow head
+      const angle = Math.atan2(endY - startY, endX - startX)
+      const arrowSize = 12
+      
+      ctx.save()
+      ctx.translate(midX, midY)
+      ctx.rotate(angle)
+      
+      ctx.beginPath()
+      ctx.moveTo(arrowSize, 0)
+      ctx.lineTo(-arrowSize / 2, -arrowSize / 2)
+      ctx.lineTo(-arrowSize / 2, arrowSize / 2)
+      ctx.closePath()
+      ctx.fillStyle = color
+      ctx.fill()
+      
+      ctx.restore()
+    }
   }, [])
 
   // Main canvas drawing effect
@@ -143,14 +181,14 @@ export function VirtualFenceCanvas({
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
       }
 
-      // Draw saved polygons
-      polygons.forEach((poly) => {
-        drawPolygon(ctx, poly.points, canvas.width, canvas.height, 'rgba(239, 68, 68, 0.35)', '#ef4444')
-      })
+      // Draw saved border line
+      if (borderPoints && borderPoints.length === 2) {
+        drawBorderLine(ctx, borderPoints, canvas.width, canvas.height, '#f59e0b', false)
+      }
 
-      // Draw current polygon being built
-      if (currentPolygon.length > 0) {
-        drawPolygon(ctx, currentPolygon, canvas.width, canvas.height, 'rgba(59, 130, 246, 0.35)', '#3b82f6', false)
+      // Draw current points being built
+      if (currentPoints.length > 0) {
+        drawBorderLine(ctx, currentPoints, canvas.width, canvas.height, '#3b82f6', true)
       }
     }
 
@@ -182,7 +220,7 @@ export function VirtualFenceCanvas({
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       drawCanvas(null)
     }
-  }, [snapshotUrl, polygons, currentPolygon, drawPolygon])
+  }, [snapshotUrl, borderPoints, currentPoints, drawBorderLine])
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!imageLoaded) return
@@ -195,23 +233,32 @@ export function VirtualFenceCanvas({
     const y = (e.clientY - rect.top) / canvas.height
 
     if (!isDrawing) {
+      // Start new line
       setIsDrawing(true)
-      setCurrentPolygon([{ x, y }])
-    } else {
-      setCurrentPolygon([...currentPolygon, { x, y }])
+      setCurrentPoints([{ x, y }])
+    } else if (currentPoints.length === 1) {
+      // Complete the line with second point
+      const newPoints = [...currentPoints, { x, y }]
+      setCurrentPoints(newPoints)
     }
   }
 
-  const handleFinishPolygon = () => {
-    if (currentPolygon.length >= 3) {
-      const newPolygon: Polygon = {
-        id: crypto.randomUUID(),
-        label: `Zone ${polygons.length + 1}`,
-        points: currentPolygon
-      }
-      setPolygons([...polygons, newPolygon])
+  const handleFinishLine = () => {
+    if (currentPoints.length === 2) {
+      setBorderPoints(currentPoints)
+      setCurrentPoints([])
+      setIsDrawing(false)
     }
-    setCurrentPolygon([])
+  }
+
+  const handleClearLine = () => {
+    setBorderPoints(null)
+    setCurrentPoints([])
+    setIsDrawing(false)
+  }
+
+  const handleResetCurrent = () => {
+    setCurrentPoints([])
     setIsDrawing(false)
   }
 
@@ -305,18 +352,24 @@ export function VirtualFenceCanvas({
   }
 
   const handleSaveSettings = async () => {
-    if (polygons.length === 0) {
-      toast.add({ title: 'Warning', description: 'Draw at least one zone before saving' })
+    if (!borderPoints || borderPoints.length !== 2) {
+      toast.add({ title: 'Warning', description: 'Draw a border line before saving' })
       return
     }
 
     setIsSaving(true)
     
     try {
+      // Convert to backend format: [[x1, y1], [x2, y2]]
+      const borderLineData: Array<[number, number]> = [
+        [borderPoints[0].x, borderPoints[0].y],
+        [borderPoints[1].x, borderPoints[1].y]
+      ]
+
       // If onSave callback provided, use it (embedded mode)
       if (onSave) {
-        await onSave(polygons)
-        toast.add({ title: 'Zone Saved', description: 'Intrusion zone configured' })
+        await onSave(borderLineData)
+        toast.add({ title: 'Line Saved', description: 'Border line configured' })
       } else {
         // Standalone mode - save directly to database
         const { data: existing } = await supabase
@@ -326,13 +379,10 @@ export function VirtualFenceCanvas({
           .maybeSingle()
 
         const currentSettings = (existing?.settings as Record<string, unknown>) || {}
-        
-        // Convert to backend format: [[x1,y1], [x2,y2], ...]
-        const intrusionZonePolygon = polygons[0].points.map(p => [p.x, p.y])
 
         const payload: Json = {
           ...currentSettings,
-          intrusion_zone_polygon: intrusionZonePolygon
+          virtual_border_line: borderLineData
         }
 
         const { error } = await supabase
@@ -345,23 +395,14 @@ export function VirtualFenceCanvas({
 
         if (error) throw error
 
-        toast.add({ title: 'Saved', description: 'Intrusion zone pushed to edge device' })
+        toast.add({ title: 'Saved', description: 'Border line pushed to edge device' })
       }
     } catch (error) {
       console.error('Save error:', error)
-      toast.add({ title: 'Error', description: 'Failed to save intrusion zone' })
+      toast.add({ title: 'Error', description: 'Failed to save border line' })
     } finally {
       setIsSaving(false)
     }
-  }
-
-  const handleResetCurrent = () => {
-    setCurrentPolygon([])
-    setIsDrawing(false)
-  }
-
-  const handleDeletePolygon = (id: string) => {
-    setPolygons(polygons.filter(p => p.id !== id))
   }
 
   // Embedded mode - simplified UI
@@ -370,10 +411,10 @@ export function VirtualFenceCanvas({
       <div className="relative">
         {/* Canvas Controls Overlay */}
         <div className="absolute top-4 left-4 z-10 flex gap-2">
-          {isDrawing && currentPolygon.length >= 3 && (
-            <Button size="sm" variant="secondary" onClick={handleFinishPolygon} className="shadow-lg">
+          {currentPoints.length === 2 && (
+            <Button size="sm" variant="secondary" onClick={handleFinishLine} className="shadow-lg">
               <Check className="h-4 w-4 mr-1" />
-              Complete Zone
+              Confirm Line
             </Button>
           )}
           <Button 
@@ -425,28 +466,26 @@ export function VirtualFenceCanvas({
         {/* Bottom Controls */}
         <div className="flex items-center justify-between p-4 bg-muted/50 border-t">
           <div className="flex items-center gap-4">
-            {polygons.length > 0 && (
+            {borderPoints && borderPoints.length === 2 && (
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Active zone:</span>
-                {polygons.map(poly => (
-                  <span 
-                    key={poly.id}
-                    className="inline-flex items-center gap-1 text-xs bg-red-500/10 text-red-600 px-2 py-1 rounded-full"
+                <span className="text-sm text-muted-foreground">Border line:</span>
+                <span className="inline-flex items-center gap-1 text-xs bg-amber-500/10 text-amber-600 px-2 py-1 rounded-full">
+                  A → B
+                  <button 
+                    onClick={handleClearLine}
+                    className="hover:text-amber-800"
                   >
-                    {poly.label}
-                    <button 
-                      onClick={() => handleDeletePolygon(poly.id)}
-                      className="hover:text-red-800"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
+                    ×
+                  </button>
+                </span>
               </div>
             )}
             {isDrawing && (
               <span className="text-xs text-muted-foreground">
-                Click to add points ({currentPolygon.length} placed)
+                {currentPoints.length === 0 
+                  ? 'Click to place point A (start)'
+                  : 'Click to place point B (end)'
+                }
               </span>
             )}
           </div>
@@ -455,7 +494,7 @@ export function VirtualFenceCanvas({
               size="sm" 
               variant="ghost" 
               onClick={handleResetCurrent}
-              disabled={!isDrawing && currentPolygon.length === 0}
+              disabled={!isDrawing && currentPoints.length === 0}
             >
               <Undo className="h-4 w-4 mr-1" />
               Reset
@@ -463,10 +502,10 @@ export function VirtualFenceCanvas({
             <Button 
               size="sm" 
               onClick={handleSaveSettings}
-              disabled={isSaving || polygons.length === 0}
+              disabled={isSaving || !borderPoints}
             >
               <Save className="h-4 w-4 mr-1" />
-              {isSaving ? 'Saving...' : 'Apply Zone'}
+              {isSaving ? 'Saving...' : 'Apply Line'}
             </Button>
           </div>
         </div>
@@ -474,19 +513,19 @@ export function VirtualFenceCanvas({
     )
   }
 
-  // Standalone mode - full UI with sidebar
+  // Standalone mode - full UI
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="lg:col-span-2 overflow-hidden rounded-xl border border-border/50">
         <div className="bg-muted/50 p-4 flex items-center justify-between border-b">
           <div>
-            <h3 className="font-medium">Draw Intrusion Zone</h3>
-            <p className="text-sm text-muted-foreground">Click to place polygon vertices</p>
+            <h3 className="font-medium">Draw Virtual Border Line</h3>
+            <p className="text-sm text-muted-foreground">Click to place start and end points</p>
           </div>
           <div className="flex gap-2">
-            {isDrawing && currentPolygon.length >= 3 && (
-              <Button size="sm" variant="secondary" onClick={handleFinishPolygon}>
-                Complete Shape
+            {currentPoints.length === 2 && (
+              <Button size="sm" variant="secondary" onClick={handleFinishLine}>
+                Confirm Line
               </Button>
             )}
             <Button size="sm" variant="outline" onClick={handleRequestSnapshot} disabled={isRequestingSnapshot}>
@@ -518,24 +557,29 @@ export function VirtualFenceCanvas({
 
       <div className="space-y-4">
         <div className="rounded-xl border border-border/50 p-4">
-          <h4 className="font-medium mb-3">Configured Zones</h4>
-          {polygons.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No zones configured yet.</p>
-          ) : (
-            <div className="space-y-2">
-              {polygons.map((poly) => (
-                <div key={poly.id} className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
-                  <span className="text-sm font-medium text-red-600">{poly.label}</span>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                    onClick={() => handleDeletePolygon(poly.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+          <h4 className="font-medium mb-3">Instructions</h4>
+          <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+            <li>Fetch a live snapshot from the camera</li>
+            <li>Click to place point A (green) - start of line</li>
+            <li>Click to place point B (blue) - end of line</li>
+            <li>Click "Confirm Line" to save</li>
+            <li>Push to edge device</li>
+          </ol>
+          
+          {borderPoints && borderPoints.length === 2 && (
+            <div className="mt-4 pt-4 border-t">
+              <h5 className="text-sm font-medium mb-2">Current Border Line</h5>
+              <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
+                <span className="text-sm font-medium text-amber-600">Line A → B</span>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                  onClick={handleClearLine}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           )}
 
@@ -544,7 +588,7 @@ export function VirtualFenceCanvas({
               variant="outline" 
               className="flex-1"
               onClick={handleResetCurrent}
-              disabled={!isDrawing && currentPolygon.length === 0}
+              disabled={!isDrawing && currentPoints.length === 0}
             >
               <Undo className="h-4 w-4 mr-2" />
               Reset
@@ -552,7 +596,7 @@ export function VirtualFenceCanvas({
             <Button 
               className="flex-1"
               onClick={handleSaveSettings}
-              disabled={isSaving || polygons.length === 0}
+              disabled={isSaving || !borderPoints}
             >
               <Save className="h-4 w-4 mr-2" />
               {isSaving ? 'Saving...' : 'Push to Edge'}

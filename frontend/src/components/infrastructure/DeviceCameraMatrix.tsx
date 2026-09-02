@@ -31,7 +31,15 @@ const maskUrl = (url: string | null) => {
   }
 }
 
-export function DeviceCameraMatrix({ deviceId, initialCameras }: { deviceId: string, initialCameras: CameraRow[] }) {
+export function DeviceCameraMatrix({ 
+  deviceId, 
+  initialCameras,
+  showSelectButton = false 
+}: { 
+  deviceId: string, 
+  initialCameras: CameraRow[],
+  showSelectButton?: boolean
+}) {
   const [cameras, setCameras] = useState<CameraRow[]>(initialCameras)
   const [supabase] = useState(() => createClient())
 
@@ -109,9 +117,13 @@ export function DeviceCameraMatrix({ deviceId, initialCameras }: { deviceId: str
               </TableCell>
               <TableCell className="text-right">
                 <Link href={`/infrastructure/${deviceId}/settings?camera=${camera.id}`} passHref>
-                  <Button variant="ghost" size="sm" className="gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button 
+                    variant={showSelectButton ? "default" : "ghost"} 
+                    size="sm" 
+                    className={`gap-2 ${showSelectButton ? '' : 'opacity-0 group-hover:opacity-100 transition-opacity'}`}
+                  >
                     <Settings2 className="h-4 w-4" />
-                    <span className="hidden sm:inline">Settings</span>
+                    <span className="hidden sm:inline">{showSelectButton ? 'Select' : 'Settings'}</span>
                   </Button>
                 </Link>
               </TableCell>
