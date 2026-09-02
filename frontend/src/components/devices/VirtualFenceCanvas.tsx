@@ -425,7 +425,7 @@ export function VirtualFenceCanvas({
           <canvas
             ref={canvasRef}
             onClick={handleCanvasClick}
-            className="absolute top-0 left-0 w-full h-full object-contain"
+            className="block max-w-full h-auto"
           />
         </div>
 
@@ -518,7 +518,7 @@ export function VirtualFenceCanvas({
           <canvas
             ref={canvasRef}
             onClick={handleCanvasClick}
-            className="absolute top-0 left-0 w-full h-full object-contain"
+            className="block max-w-full h-auto"
           />
         </div>
       </div>

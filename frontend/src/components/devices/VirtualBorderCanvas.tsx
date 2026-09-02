@@ -462,7 +462,7 @@ export function VirtualBorderCanvas({
           <canvas
             ref={canvasRef}
             onClick={handleCanvasClick}
-            className="absolute top-0 left-0 w-full h-full object-contain"
+            className="block max-w-full h-auto"
           />
         </div>
 
@@ -553,10 +553,10 @@ export function VirtualBorderCanvas({
           <canvas
             ref={canvasRef}
             onClick={handleCanvasClick}
-            className="absolute top-0 left-0 w-full h-full object-contain"
+            className="block max-w-full"
           />
         </div>
-      </div>
+        </div>
 
       <div className="space-y-4">
         <div className="rounded-xl border border-border/50 p-4">
