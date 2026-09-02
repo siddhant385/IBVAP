@@ -79,52 +79,9 @@ export function VirtualFenceCanvas({
     }
   }, [])
 
-  // Draw polygon on canvas
-  const drawPolygon = useCallback((
-    ctx: CanvasRenderingContext2D, 
-    points: Point[], 
-    width: number, 
-    height: number, 
-    fillColor: string, 
-    strokeColor: string,
-    closePath: boolean = true
-  ) => {
-    if (points.length === 0) return
-
-    ctx.beginPath()
-    ctx.moveTo(points[0].x * width, points[0].y * height)
-    
-    for (let i = 1; i < points.length; i++) {
-      ctx.lineTo(points[i].x * width, points[i].y * height)
-    }
-
-    if (closePath && points.length > 2) {
-      ctx.closePath()
-      ctx.fillStyle = fillColor
-      ctx.fill()
-    }
-
-    ctx.strokeStyle = strokeColor
-    ctx.lineWidth = 3
-    ctx.stroke()
-
-    // Draw vertex points with labels
-    points.forEach((p, index) => {
-      ctx.beginPath()
-      ctx.arc(p.x * width, p.y * height, 6, 0, Math.PI * 2)
-      ctx.fillStyle = strokeColor
-      ctx.fill()
-      ctx.strokeStyle = '#ffffff'
-      ctx.lineWidth = 2
-      ctx.stroke()
-      
-      // Draw point number
-      ctx.fillStyle = '#ffffff'
-      ctx.font = 'bold 10px sans-serif'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.fillText((index + 1).toString(), p.x * width, p.y * height)
-    })
+  // Draw polygon on canvas (legacy stub - actual drawing happens in main effect)
+  const drawPolygon = useCallback(() => {
+    // No-op - see drawCanvas in main effect for actual implementation
   }, [])
 
   // Main canvas drawing effect
@@ -136,28 +93,110 @@ export function VirtualFenceCanvas({
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    // Calculate display metrics accounting for object-contain letterboxing
+    const getImageDisplayMetrics = () => {
+      const containerW = container.clientWidth
+      const containerH = container.clientHeight
+      
+      if (!imageLoaded || canvas.width === 0 || canvas.height === 0) {
+        return { displayWidth: containerW, displayHeight: containerH, offsetX: 0, offsetY: 0 }
+      }
+      
+      const canvasRatio = canvas.width / canvas.height
+      const containerRatio = containerW / containerH
+      
+      let displayWidth: number
+      let displayHeight: number
+      let offsetX = 0
+      let offsetY = 0
+      
+      if (canvasRatio > containerRatio) {
+        displayWidth = containerW
+        displayHeight = containerW / canvasRatio
+        offsetY = (containerH - displayHeight) / 2
+      } else {
+        displayHeight = containerH
+        displayWidth = containerH * canvasRatio
+        offsetX = (containerW - displayWidth) / 2
+      }
+      
+      return { displayWidth, displayHeight, offsetX, offsetY }
+    }
+
+    const drawPolygonAt = (
+      points: Point[],
+      offsetX: number,
+      offsetY: number,
+      width: number,
+      height: number,
+      fillColor: string,
+      strokeColor: string,
+      closePath: boolean
+    ) => {
+      if (points.length === 0) return
+
+      ctx.beginPath()
+      ctx.moveTo(offsetX + points[0].x * width, offsetY + points[0].y * height)
+      
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(offsetX + points[i].x * width, offsetY + points[i].y * height)
+      }
+
+      if (closePath && points.length > 2) {
+        ctx.closePath()
+        ctx.fillStyle = fillColor
+        ctx.fill()
+      }
+
+      ctx.strokeStyle = strokeColor
+      ctx.lineWidth = 3
+      ctx.stroke()
+
+      points.forEach((p, index) => {
+        const px = offsetX + p.x * width
+        const py = offsetY + p.y * height
+        
+        ctx.beginPath()
+        ctx.arc(px, py, 6, 0, Math.PI * 2)
+        ctx.fillStyle = strokeColor
+        ctx.fill()
+        ctx.strokeStyle = '#ffffff'
+        ctx.lineWidth = 2
+        ctx.stroke()
+        
+        ctx.fillStyle = '#ffffff'
+        ctx.font = 'bold 10px sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText((index + 1).toString(), px, py)
+      })
+    }
+
     const drawCanvas = (img: HTMLImageElement | null) => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      const { displayWidth, displayHeight, offsetX, offsetY } = getImageDisplayMetrics()
+      
+      ctx.fillStyle = '#09090b'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
       
       if (img) {
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        ctx.drawImage(img, offsetX, offsetY, displayWidth, displayHeight)
       }
 
       // Draw saved polygons
       polygons.forEach((poly) => {
-        drawPolygon(ctx, poly.points, canvas.width, canvas.height, 'rgba(239, 68, 68, 0.35)', '#ef4444')
+        drawPolygonAt(poly.points, offsetX, offsetY, displayWidth, displayHeight, 'rgba(239, 68, 68, 0.35)', '#ef4444', true)
       })
 
       // Draw current polygon being built
       if (currentPolygon.length > 0) {
-        drawPolygon(ctx, currentPolygon, canvas.width, canvas.height, 'rgba(59, 130, 246, 0.35)', '#3b82f6', false)
+        drawPolygonAt(currentPolygon, offsetX, offsetY, displayWidth, displayHeight, 'rgba(59, 130, 246, 0.35)', '#3b82f6', false)
       }
     }
 
     if (!snapshotUrl) {
       setImageLoaded(false)
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      drawCanvas(null)
+      ctx.fillStyle = '#09090b'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
       return
     }
 
@@ -166,6 +205,7 @@ export function VirtualFenceCanvas({
     img.src = snapshotUrl
     
     img.onload = () => {
+      // Set canvas internal size to match image aspect ratio
       const ratio = img.width / img.height
       const containerWidth = container.clientWidth
       const scaledHeight = containerWidth / ratio
@@ -179,24 +219,51 @@ export function VirtualFenceCanvas({
 
     img.onerror = () => {
       setImageLoaded(false)
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      drawCanvas(null)
+      ctx.fillStyle = '#09090b'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
     }
-  }, [snapshotUrl, polygons, currentPolygon, drawPolygon])
+  }, [snapshotUrl, polygons, currentPolygon, imageLoaded])
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!imageLoaded) return
 
     const canvas = canvasRef.current
-    if (!canvas) return
+    const container = containerRef.current
+    if (!canvas || !container) return
 
     const rect = canvas.getBoundingClientRect()
-    // Use display size for consistent coordinate mapping
-    const displayWidth = rect.width
-    const displayHeight = rect.height
     
-    const x = (e.clientX - rect.left) / displayWidth
-    const y = (e.clientY - rect.top) / displayHeight
+    // Calculate actual image display area (accounting for object-contain letterboxing)
+    const canvasRatio = canvas.width / canvas.height
+    const containerRatio = rect.width / rect.height
+    
+    let displayWidth: number
+    let displayHeight: number
+    let offsetX = 0
+    let offsetY = 0
+    
+    if (canvasRatio > containerRatio) {
+      displayWidth = rect.width
+      displayHeight = rect.width / canvasRatio
+      offsetY = (rect.height - displayHeight) / 2
+    } else {
+      displayHeight = rect.height
+      displayWidth = rect.height * canvasRatio
+      offsetX = (rect.width - displayWidth) / 2
+    }
+    
+    const clickX = e.clientX - rect.left
+    const clickY = e.clientY - rect.top
+    
+    // Ignore clicks in letterbox area
+    if (clickX < offsetX || clickX > offsetX + displayWidth ||
+        clickY < offsetY || clickY > offsetY + displayHeight) {
+      return
+    }
+    
+    // Normalize to image coordinates
+    const x = (clickX - offsetX) / displayWidth
+    const y = (clickY - offsetY) / displayHeight
 
     if (!isDrawing) {
       setIsDrawing(true)
