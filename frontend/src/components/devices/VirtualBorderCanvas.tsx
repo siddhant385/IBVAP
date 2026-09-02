@@ -84,7 +84,7 @@ export function VirtualBorderCanvas({
     }
   }, [])
 
-  // Draw border line on canvas (legacy - kept for compatibility)
+  // Draw border line on canvas
   const drawBorderLine = useCallback((
     ctx: CanvasRenderingContext2D,
     points: BorderPoint[],
@@ -93,8 +93,72 @@ export function VirtualBorderCanvas({
     color: string,
     isDraft: boolean = false
   ) => {
-    // This is now handled inside the main effect with proper letterboxing
-    // Keeping as stub to avoid breaking references
+    if (points.length === 0) return
+
+    ctx.beginPath()
+    ctx.moveTo(points[0].x * width, points[0].y * height)
+    
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(points[i].x * width, points[i].y * height)
+    }
+
+    ctx.strokeStyle = color
+    ctx.lineWidth = isDraft ? 2 : 4
+    ctx.setLineDash(isDraft ? [8, 4] : [])
+    ctx.stroke()
+    ctx.setLineDash([])
+
+    // Draw endpoint markers
+    points.forEach((p, index) => {
+      const px = p.x * width
+      const py = p.y * height
+      
+      ctx.beginPath()
+      ctx.arc(px, py, 10, 0, Math.PI * 2)
+      ctx.fillStyle = index === 0 ? 'rgba(34, 197, 94, 0.3)' : 'rgba(59, 130, 246, 0.3)'
+      ctx.fill()
+      
+      ctx.beginPath()
+      ctx.arc(px, py, 6, 0, Math.PI * 2)
+      ctx.fillStyle = index === 0 ? '#22c55e' : '#3b82f6'
+      ctx.fill()
+      ctx.strokeStyle = '#ffffff'
+      ctx.lineWidth = 2
+      ctx.stroke()
+      
+      ctx.fillStyle = '#ffffff'
+      ctx.font = 'bold 10px sans-serif'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(index === 0 ? 'A' : 'B', px, py)
+    })
+
+    // Draw directional arrow for completed lines
+    if (!isDraft && points.length >= 2) {
+      const startX = points[0].x * width
+      const startY = points[0].y * height
+      const endX = points[1].x * width
+      const endY = points[1].y * height
+      const midX = (startX + endX) / 2
+      const midY = (startY + endY) / 2
+      
+      const angle = Math.atan2(endY - startY, endX - startX)
+      const arrowSize = 12
+      
+      ctx.save()
+      ctx.translate(midX, midY)
+      ctx.rotate(angle)
+      
+      ctx.beginPath()
+      ctx.moveTo(arrowSize, 0)
+      ctx.lineTo(-arrowSize / 2, -arrowSize / 2)
+      ctx.lineTo(-arrowSize / 2, arrowSize / 2)
+      ctx.closePath()
+      ctx.fillStyle = color
+      ctx.fill()
+      
+      ctx.restore()
+    }
   }, [])
 
   // Main canvas drawing effect
@@ -107,150 +171,26 @@ export function VirtualBorderCanvas({
     if (!ctx) return
 
     const drawCanvas = (img: HTMLImageElement | null) => {
-      const { displayWidth, displayHeight, offsetX, offsetY } = getImageDisplayMetrics()
-      
-      ctx.fillStyle = '#09090b'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
       
       if (img) {
-        ctx.drawImage(img, offsetX, offsetY, displayWidth, displayHeight)
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
       }
 
       // Draw saved border line
       if (borderPoints && borderPoints.length === 2) {
-        drawBorderLineWithOffset(ctx, borderPoints, offsetX, offsetY, displayWidth, displayHeight, '#f59e0b', false)
+        drawBorderLine(ctx, borderPoints, canvas.width, canvas.height, '#f59e0b', false)
       }
 
       // Draw current points being built
       if (currentPoints.length > 0) {
-        drawBorderLineWithOffset(ctx, currentPoints, offsetX, offsetY, displayWidth, displayHeight, '#3b82f6', true)
-      }
-    }
-
-    // Calculate display metrics accounting for object-contain letterboxing
-    const getImageDisplayMetrics = () => {
-      const containerW = container.clientWidth
-      const containerH = container.clientHeight
-      
-      if (!imageLoaded || canvas.width === 0 || canvas.height === 0) {
-        return { displayWidth: containerW, displayHeight: containerH, offsetX: 0, offsetY: 0 }
-      }
-      
-      // Canvas internal size matches image aspect ratio
-      const canvasRatio = canvas.width / canvas.height
-      const containerRatio = containerW / containerH
-      
-      let displayWidth: number
-      let displayHeight: number
-      let offsetX = 0
-      let offsetY = 0
-      
-      if (canvasRatio > containerRatio) {
-        // Canvas wider than container - fit width, add vertical letterbox
-        displayWidth = containerW
-        displayHeight = containerW / canvasRatio
-        offsetY = (containerH - displayHeight) / 2
-      } else {
-        // Canvas taller than container - fit height, add horizontal letterbox
-        displayHeight = containerH
-        displayWidth = containerH * canvasRatio
-        offsetX = (containerW - displayWidth) / 2
-      }
-      
-      return { displayWidth, displayHeight, offsetX, offsetY }
-    }
-
-    // Draw border line with letterboxing offset
-    const drawBorderLineWithOffset = (
-      ctx: CanvasRenderingContext2D,
-      points: BorderPoint[],
-      offsetX: number,
-      offsetY: number,
-      width: number,
-      height: number,
-      color: string,
-      isDraft: boolean
-    ) => {
-      if (points.length === 0) return
-
-      const drawLine = (p1: BorderPoint, p2: BorderPoint) => {
-        const x1 = offsetX + p1.x * width
-        const y1 = offsetY + p1.y * height
-        const x2 = offsetX + p2.x * width
-        const y2 = offsetY + p2.y * height
-        
-        ctx.beginPath()
-        ctx.moveTo(x1, y1)
-        ctx.lineTo(x2, y2)
-        ctx.strokeStyle = color
-        ctx.lineWidth = isDraft ? 2 : 4
-        ctx.setLineDash(isDraft ? [8, 4] : [])
-        ctx.stroke()
-        ctx.setLineDash([])
-      }
-
-      // Draw line segments
-      for (let i = 0; i < points.length - 1; i++) {
-        drawLine(points[i], points[i + 1])
-      }
-
-      // Draw endpoint markers
-      points.forEach((p, index) => {
-        const px = offsetX + p.x * width
-        const py = offsetY + p.y * height
-        
-        ctx.beginPath()
-        ctx.arc(px, py, 10, 0, Math.PI * 2)
-        ctx.fillStyle = index === 0 ? 'rgba(34, 197, 94, 0.3)' : 'rgba(59, 130, 246, 0.3)'
-        ctx.fill()
-        
-        ctx.beginPath()
-        ctx.arc(px, py, 6, 0, Math.PI * 2)
-        ctx.fillStyle = index === 0 ? '#22c55e' : '#3b82f6'
-        ctx.fill()
-        ctx.strokeStyle = '#ffffff'
-        ctx.lineWidth = 2
-        ctx.stroke()
-        
-        ctx.fillStyle = '#ffffff'
-        ctx.font = 'bold 10px sans-serif'
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.fillText(index === 0 ? 'A' : 'B', px, py)
-      })
-
-      // Direction arrow
-      if (!isDraft && points.length >= 2) {
-        const startX = offsetX + points[0].x * width
-        const startY = offsetY + points[0].y * height
-        const endX = offsetX + points[1].x * width
-        const endY = offsetY + points[1].y * height
-        const midX = (startX + endX) / 2
-        const midY = (startY + endY) / 2
-        
-        const angle = Math.atan2(endY - startY, endX - startX)
-        const arrowSize = 12
-        
-        ctx.save()
-        ctx.translate(midX, midY)
-        ctx.rotate(angle)
-        
-        ctx.beginPath()
-        ctx.moveTo(arrowSize, 0)
-        ctx.lineTo(-arrowSize / 2, -arrowSize / 2)
-        ctx.lineTo(-arrowSize / 2, arrowSize / 2)
-        ctx.closePath()
-        ctx.fillStyle = color
-        ctx.fill()
-        
-        ctx.restore()
+        drawBorderLine(ctx, currentPoints, canvas.width, canvas.height, '#3b82f6', true)
       }
     }
 
     if (!snapshotUrl) {
       setImageLoaded(false)
-      ctx.fillStyle = '#09090b'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
       return
     }
 
@@ -259,7 +199,6 @@ export function VirtualBorderCanvas({
     img.src = snapshotUrl
     
     img.onload = () => {
-      // Set canvas internal size to match image aspect ratio
       const ratio = img.width / img.height
       const containerWidth = container.clientWidth
       const scaledHeight = containerWidth / ratio
@@ -273,52 +212,30 @@ export function VirtualBorderCanvas({
 
     img.onerror = () => {
       setImageLoaded(false)
-      ctx.fillStyle = '#09090b'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
     }
-  }, [snapshotUrl, borderPoints, currentPoints])
+  }, [snapshotUrl, borderPoints, currentPoints, drawBorderLine])
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!imageLoaded) return
 
     const canvas = canvasRef.current
-    const container = containerRef.current
-    if (!canvas || !container) return
+    if (!canvas) return
 
     const rect = canvas.getBoundingClientRect()
     
-    // Calculate actual image display area (accounting for object-contain letterboxing)
-    const canvasRatio = canvas.width / canvas.height
-    const containerRatio = rect.width / rect.height
-    
-    let displayWidth: number
-    let displayHeight: number
-    let offsetX = 0
-    let offsetY = 0
-    
-    if (canvasRatio > containerRatio) {
-      displayWidth = rect.width
-      displayHeight = rect.width / canvasRatio
-      offsetY = (rect.height - displayHeight) / 2
-    } else {
-      displayHeight = rect.height
-      displayWidth = rect.height * canvasRatio
-      offsetX = (rect.width - displayWidth) / 2
-    }
+    // The canvas is sized to match the image aspect ratio
+    // canvas.width = containerWidth, canvas.height = scaledHeight
+    // With object-contain, canvas fills the container maintaining aspect ratio
+    // So the displayed canvas matches canvas.width/height
     
     // Click position relative to canvas
     const clickX = e.clientX - rect.left
     const clickY = e.clientY - rect.top
     
-    // Check if click is within the actual image area
-    if (clickX < offsetX || clickX > offsetX + displayWidth ||
-        clickY < offsetY || clickY > offsetY + displayHeight) {
-      return // Clicked in letterbox area, ignore
-    }
-    
     // Normalize to image coordinates (0.0-1.0)
-    const x = (clickX - offsetX) / displayWidth
-    const y = (clickY - offsetY) / displayHeight
+    const x = clickX / rect.width
+    const y = clickY / rect.height
 
     if (!isDrawing) {
       setIsDrawing(true)
