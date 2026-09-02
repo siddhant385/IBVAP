@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
-import { CameraSettingsForm } from '@/components/devices/CameraSettingsForm'
-import { DeviceCameraMatrix } from '@/components/infrastructure/DeviceCameraMatrix'
+import { CameraSettingsForm } from './_components/CameraSettingsForm'
+import { DeviceCameraMatrix } from './_components/DeviceCameraMatrix'
 import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'

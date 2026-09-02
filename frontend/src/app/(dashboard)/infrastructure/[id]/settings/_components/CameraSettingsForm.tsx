@@ -23,8 +23,8 @@ import {
   CloudSlashIcon,
   CircleNotchIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import { VirtualFenceCanvas, type Polygon } from './VirtualFenceCanvas'
-import { VirtualBorderCanvas } from './VirtualBorderCanvas'
+import { VirtualFenceCanvas, type Polygon } from './canvas/VirtualFenceCanvas'
+import { VirtualBorderCanvas } from './canvas/VirtualBorderCanvas'
 import { CameraLiveStatus } from './CameraLiveStatus'
 import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel, FieldSet } from '@/components/ui/field'
 import { cn } from '@/lib/utils'
@@ -215,7 +215,7 @@ export function CameraSettingsForm({
     
     if ((mode === 'virtual_border' || mode === 'intrusion_detection') && 
         !additionalPlugins.includes('evidence_capture')) {
-      newPlugins.push('evidence_capture')
+      newPlugins = [...newPlugins, 'evidence_capture']
     }
     
     setSettings(prev => ({ ...prev, enabled_plugins: newPlugins }))
@@ -443,7 +443,6 @@ export function CameraSettingsForm({
                     : []
                   }
                   onSave={handlePolygonSave}
-                  embedded={true}
                   isOffline={isOffline}
                 />
               ) : (
@@ -453,7 +452,6 @@ export function CameraSettingsForm({
                   hardwareCameraId={hardwareCameraId}
                   initialBorderLine={settings.virtual_border_line}
                   onSave={handleBorderLineSave}
-                  embedded={true}
                   isOffline={isOffline}
                 />
               )}

@@ -1,20 +1,18 @@
 import { createClient } from '@/utils/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { CameraCard } from '@/components/infrastructure/CameraCard'
+import { CameraCard } from './_components/CameraCard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { 
   CaretLeftIcon, 
   CpuIcon, 
   WifiHighIcon, 
   WifiSlashIcon,
   ClockIcon,
-  GearIcon,
-  ArrowRightIcon,
   VideoCameraIcon
 } from '@phosphor-icons/react/dist/ssr'
 import { Database } from '@/types/database.types'
