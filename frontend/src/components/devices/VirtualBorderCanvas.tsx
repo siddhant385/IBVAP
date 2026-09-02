@@ -229,8 +229,12 @@ export function VirtualBorderCanvas({
     if (!canvas) return
 
     const rect = canvas.getBoundingClientRect()
-    const x = (e.clientX - rect.left) / canvas.width
-    const y = (e.clientY - rect.top) / canvas.height
+    // Use display size for consistent coordinate mapping
+    const displayWidth = rect.width
+    const displayHeight = rect.height
+    
+    const x = (e.clientX - rect.left) / displayWidth
+    const y = (e.clientY - rect.top) / displayHeight
 
     if (!isDrawing) {
       // Start new line
