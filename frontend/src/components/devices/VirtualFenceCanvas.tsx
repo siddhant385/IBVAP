@@ -2,10 +2,16 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
-import { Trash2, Save, Undo, Check } from 'lucide-react'
 import { useToastManager } from '@/components/ui/toast'
 import { createClient } from '@/utils/supabase/client'
 import type { Json } from '@/types/database.types'
+import { 
+  TrashIcon, 
+  FloppyDiskIcon, 
+  ArrowCounterClockwiseIcon, 
+  CheckIcon,
+  CloudSlashIcon
+} from '@phosphor-icons/react/dist/ssr'
 
 export interface Point {
   x: number
@@ -37,6 +43,7 @@ interface VirtualFenceCanvasProps {
   referenceImageUrl?: string
   onSave?: (polygons: Polygon[]) => void | Promise<void>
   embedded?: boolean
+  isOffline?: boolean
 }
 
 export function VirtualFenceCanvas({ 
@@ -47,7 +54,8 @@ export function VirtualFenceCanvas({
   initialPolygons = [], 
   referenceImageUrl,
   onSave,
-  embedded = false
+  embedded = false,
+  isOffline = false
 }: VirtualFenceCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -379,7 +387,7 @@ export function VirtualFenceCanvas({
         <div className="absolute top-4 left-4 z-10 flex gap-2">
           {isDrawing && currentPolygon.length >= 3 && (
             <Button size="sm" variant="secondary" onClick={handleFinishPolygon} className="shadow-lg">
-              <Check className="h-4 w-4 mr-1" />
+              <CheckIcon className="size-4" />
               Complete Zone
             </Button>
           )}
@@ -387,10 +395,15 @@ export function VirtualFenceCanvas({
             size="sm" 
             variant="secondary" 
             onClick={handleRequestSnapshot} 
-            disabled={isRequestingSnapshot}
+            disabled={isRequestingSnapshot || isOffline}
             className="shadow-lg"
           >
-            {isRequestingSnapshot ? 'Fetching...' : 'Fetch Snapshot'}
+            {isOffline ? (
+              <>
+                <CloudSlashIcon className="size-4" />
+                Offline
+              </>
+            ) : isRequestingSnapshot ? 'Fetching...' : 'Fetch Snapshot'}
           </Button>
         </div>
 
@@ -464,7 +477,7 @@ export function VirtualFenceCanvas({
               onClick={handleResetCurrent}
               disabled={!isDrawing && currentPolygon.length === 0}
             >
-              <Undo className="h-4 w-4 mr-1" />
+              <ArrowCounterClockwiseIcon className="size-4" />
               Reset
             </Button>
             <Button 
@@ -472,7 +485,7 @@ export function VirtualFenceCanvas({
               onClick={handleSaveSettings}
               disabled={isSaving || polygons.length === 0}
             >
-              <Save className="h-4 w-4 mr-1" />
+              <FloppyDiskIcon className="size-4" />
               {isSaving ? 'Saving...' : 'Apply Zone'}
             </Button>
           </div>
@@ -539,7 +552,7 @@ export function VirtualFenceCanvas({
                     className="h-7 w-7 text-muted-foreground hover:text-destructive"
                     onClick={() => handleDeletePolygon(poly.id)}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <TrashIcon className="size-4" />
                   </Button>
                 </div>
               ))}
@@ -553,7 +566,7 @@ export function VirtualFenceCanvas({
               onClick={handleResetCurrent}
               disabled={!isDrawing && currentPolygon.length === 0}
             >
-              <Undo className="h-4 w-4 mr-2" />
+              <ArrowCounterClockwiseIcon className="size-4" />
               Reset
             </Button>
             <Button 
@@ -561,7 +574,7 @@ export function VirtualFenceCanvas({
               onClick={handleSaveSettings}
               disabled={isSaving || polygons.length === 0}
             >
-              <Save className="h-4 w-4 mr-2" />
+              <FloppyDiskIcon className="size-4" />
               {isSaving ? 'Saving...' : 'Push to Edge'}
             </Button>
           </div>

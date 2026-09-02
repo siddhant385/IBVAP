@@ -2,10 +2,16 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
-import { Trash2, Save, Undo, Check } from 'lucide-react'
 import { useToastManager } from '@/components/ui/toast'
 import { createClient } from '@/utils/supabase/client'
 import type { Json } from '@/types/database.types'
+import { 
+  TrashIcon, 
+  FloppyDiskIcon, 
+  ArrowCounterClockwiseIcon, 
+  CheckIcon,
+  CloudSlashIcon
+} from '@phosphor-icons/react/dist/ssr'
 
 // Type for border line point
 export interface BorderPoint {
@@ -32,6 +38,7 @@ interface VirtualBorderCanvasProps {
   referenceImageUrl?: string
   onSave?: (borderLine: Array<[number, number]> | null) => void | Promise<void>
   embedded?: boolean
+  isOffline?: boolean
 }
 
 export function VirtualBorderCanvas({
@@ -42,7 +49,8 @@ export function VirtualBorderCanvas({
   initialBorderLine = null,
   referenceImageUrl,
   onSave,
-  embedded = false
+  embedded = false,
+  isOffline = false
 }: VirtualBorderCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -416,7 +424,7 @@ export function VirtualBorderCanvas({
         <div className="absolute top-4 left-4 z-10 flex gap-2">
           {currentPoints.length === 2 && (
             <Button size="sm" variant="secondary" onClick={handleFinishLine} className="shadow-lg">
-              <Check className="h-4 w-4 mr-1" />
+              <CheckIcon className="size-4" />
               Confirm Line
             </Button>
           )}
@@ -424,10 +432,15 @@ export function VirtualBorderCanvas({
             size="sm" 
             variant="secondary" 
             onClick={handleRequestSnapshot} 
-            disabled={isRequestingSnapshot}
+            disabled={isRequestingSnapshot || isOffline}
             className="shadow-lg"
           >
-            {isRequestingSnapshot ? 'Fetching...' : 'Fetch Snapshot'}
+            {isOffline ? (
+              <>
+                <CloudSlashIcon className="size-4" />
+                Offline
+              </>
+            ) : isRequestingSnapshot ? 'Fetching...' : 'Fetch Snapshot'}
           </Button>
         </div>
 
@@ -499,7 +512,7 @@ export function VirtualBorderCanvas({
               onClick={handleResetCurrent}
               disabled={!isDrawing && currentPoints.length === 0}
             >
-              <Undo className="h-4 w-4 mr-1" />
+              <ArrowCounterClockwiseIcon className="size-4" />
               Reset
             </Button>
             <Button 
@@ -507,7 +520,7 @@ export function VirtualBorderCanvas({
               onClick={handleSaveSettings}
               disabled={isSaving || !borderPoints}
             >
-              <Save className="h-4 w-4 mr-1" />
+              <FloppyDiskIcon className="size-4" />
               {isSaving ? 'Saving...' : 'Apply Line'}
             </Button>
           </div>
@@ -580,7 +593,7 @@ export function VirtualBorderCanvas({
                   className="h-7 w-7 text-muted-foreground hover:text-destructive"
                   onClick={handleClearLine}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <TrashIcon className="size-4" />
                 </Button>
               </div>
             </div>
@@ -593,7 +606,7 @@ export function VirtualBorderCanvas({
               onClick={handleResetCurrent}
               disabled={!isDrawing && currentPoints.length === 0}
             >
-              <Undo className="h-4 w-4 mr-2" />
+              <ArrowCounterClockwiseIcon className="size-4" />
               Reset
             </Button>
             <Button 
@@ -601,7 +614,7 @@ export function VirtualBorderCanvas({
               onClick={handleSaveSettings}
               disabled={isSaving || !borderPoints}
             >
-              <Save className="h-4 w-4 mr-2" />
+              <FloppyDiskIcon className="size-4" />
               {isSaving ? 'Saving...' : 'Push to Edge'}
             </Button>
           </div>

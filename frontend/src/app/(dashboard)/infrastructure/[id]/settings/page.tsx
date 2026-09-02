@@ -7,7 +7,7 @@ import { notFound } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Camera, Cpu, Wifi, WifiOff } from 'lucide-react'
+import { Camera, Cpu } from 'lucide-react'
 
 export default async function DeviceSettingsPage(props: { params: Promise<{ id: string }>, searchParams: Promise<{ camera?: string }> }) {
   const supabase = await createClient()
@@ -50,7 +50,7 @@ export default async function DeviceSettingsPage(props: { params: Promise<{ id: 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <Link 
-            href="/infrastructure" 
+            href={`/infrastructure/${deviceId}`} 
             className="rounded-lg p-2 hover:bg-muted text-muted-foreground transition-colors"
           >
             <ChevronLeft className="h-5 w-5" />
@@ -64,15 +64,32 @@ export default async function DeviceSettingsPage(props: { params: Promise<{ id: 
         </div>
         
         <div className="flex items-center gap-2">
-          {device.is_online ? (
+          {selectedCamera ? (
+            // Show camera status when a camera is selected
+            selectedCamera.is_online ? (
+              <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30">
+                <span className="relative flex size-2 mr-1.5">
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-500 opacity-75" />
+                  <span className="relative inline-flex size-2 rounded-full bg-green-500" />
+                </span>
+                Camera Online
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="bg-zinc-500/10 text-zinc-500 border-zinc-500/30">
+                Camera Offline
+              </Badge>
+            )
+          ) : device.is_online ? (
             <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30">
-              <Wifi className="h-3 w-3 mr-1" />
-              Online
+              <span className="relative flex size-2 mr-1.5">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-500 opacity-75" />
+                <span className="relative inline-flex size-2 rounded-full bg-green-500" />
+              </span>
+              Device Online
             </Badge>
           ) : (
             <Badge variant="outline" className="bg-zinc-500/10 text-zinc-500 border-zinc-500/30">
-              <WifiOff className="h-3 w-3 mr-1" />
-              Offline
+              Device Offline
             </Badge>
           )}
         </div>
