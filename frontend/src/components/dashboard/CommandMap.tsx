@@ -1,11 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { createClient } from '@/utils/supabase/client'
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import { MapContainer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
+import { extendLeaflet } from '@india-boundary-corrector/leaflet-layer'
 import 'leaflet/dist/leaflet.css'
+
+// Extend Leaflet once
+extendLeaflet(L)
 
 interface CameraMarker {
   id: string
@@ -21,6 +25,34 @@ const defaultIcon = L.icon({
   iconSize: [25, 41],
   iconAnchor: [12, 41],
 })
+
+function IndiaCorrectedTileLayer() {
+  const map = useMap()
+  const layerRef = useRef<L.TileLayer | null>(null)
+
+  useEffect(() => {
+    if (!map) return
+
+    // Create the corrected tile layer
+    const correctedLayer = L.tileLayer.indiaBoundaryCorrected(
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      }
+    )
+
+    correctedLayer.addTo(map)
+    layerRef.current = correctedLayer
+
+    return () => {
+      if (layerRef.current && map) {
+        map.removeLayer(layerRef.current)
+      }
+    }
+  }, [map])
+
+  return null
+}
 
 export function CommandMap({ initialCameras }: { initialCameras: CameraMarker[] }) {
   const [cameras, setCameras] = useState<CameraMarker[]>(initialCameras)
@@ -79,10 +111,7 @@ export function CommandMap({ initialCameras }: { initialCameras: CameraMarker[] 
       </CardHeader>
       <CardContent className="flex-1 min-h-[350px] p-0 relative overflow-hidden rounded-b-xl">
         <MapContainer center={center} zoom={13} className="h-full w-full min-h-[350px]">
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+          <IndiaCorrectedTileLayer />
           {cameras.map((cam) => (
             cam.coordinates ? (
               <Marker key={cam.id} position={[cam.coordinates[0], cam.coordinates[1]]} icon={defaultIcon}>
