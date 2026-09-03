@@ -1,6 +1,6 @@
 'use client'
 
-import { ReactNode } from 'react'
+import { ReactNode, useEffect } from 'react'
 import { Spinner } from '@/components/ui/spinner'
 import { CloudSlashIcon } from '@phosphor-icons/react/dist/ssr'
 import { useSnapshot } from '../hooks/useSnapshot'
@@ -33,11 +33,19 @@ export function DrawingCanvas({
   onCanvasClick,
   overlays
 }: DrawingCanvasProps) {
-  const { snapshotUrl, isRequestingSnapshot, snapshotStatus } = useSnapshot({
+  const { snapshotUrl, isRequestingSnapshot, snapshotStatus, requestSnapshot } = useSnapshot({
     hardwareDeviceId,
     hardwareCameraId,
     isOffline
   })
+
+  useEffect(() => {
+    if (isOffline) return
+    if (snapshotUrl) return
+    if (isRequestingSnapshot) return
+    requestSnapshot()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOffline, snapshotUrl, isRequestingSnapshot, hardwareDeviceId, hardwareCameraId])
 
   const { canvasRef, containerRef, imageLoaded } = useCanvasDrawing({
     snapshotUrl,
