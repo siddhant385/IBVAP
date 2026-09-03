@@ -16,6 +16,9 @@ type Alert = Database['public']['Tables']['alerts']['Row'] & {
 
 export function RealtimeAlertFeed() {
   const [alerts, setAlerts] = useState<Alert[]>([])
+  const [hasMore, setHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const PAGE_SIZE = 50
   const [supabase] = useState(() => createClient())
   const chimeRef = useRef<HTMLAudioElement | null>(null)
   const router = useRouter()
@@ -28,9 +31,12 @@ export function RealtimeAlertFeed() {
         .from('alerts')
         .select('*, devices(name, location)')
         .order('timestamp', { ascending: false })
-        .limit(50)
+        .limit(PAGE_SIZE + 1)
       
-      if (data) setAlerts(data as Alert[])
+      if (data) {
+        setHasMore(data.length > PAGE_SIZE)
+        setAlerts((data.slice(0, PAGE_SIZE) as Alert[]))
+      }
     }
 
     fetchInitial()
@@ -56,7 +62,7 @@ export function RealtimeAlertFeed() {
             chimeRef.current?.play().catch(e => console.log('Audio autoplay blocked', e))
           }
 
-          setAlerts((current) => [newAlert, ...current].slice(0, 100))
+          setAlerts((current) => [newAlert, ...current])
         }
       )
       .on(
@@ -74,6 +80,23 @@ export function RealtimeAlertFeed() {
       supabase.removeChannel(channel)
     }
   }, [supabase])
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore || alerts.length === 0) return
+    setLoadingMore(true)
+    const oldest = alerts[alerts.length - 1]
+    const { data } = await supabase
+      .from('alerts')
+      .select('*, devices(name, location)')
+      .order('timestamp', { ascending: false })
+      .lt('timestamp', oldest.timestamp)
+      .limit(PAGE_SIZE + 1)
+    if (data) {
+      setHasMore(data.length > PAGE_SIZE)
+      setAlerts((prev) => [...prev, ...(data.slice(0, PAGE_SIZE) as Alert[])])
+    }
+    setLoadingMore(false)
+  }, [alerts, hasMore, loadingMore, supabase])
 
   const handleTriage = useCallback(async (e: React.MouseEvent, alertId: string, status: 'resolved' | 'false_positive') => {
     e.stopPropagation() // Prevent row click from navigating when pressing triage buttons
@@ -208,33 +231,44 @@ export function RealtimeAlertFeed() {
             {alerts.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">No alerts recorded.</div>
             ) : (
-              alerts.map((alert) => (
-                <div 
-                  key={alert.id} 
-                  onClick={() => router.push(`/alerts/${alert.id}`)}
-                  className="flex items-center justify-between p-4 hover:bg-muted/20 cursor-pointer transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-full bg-muted p-2">
-                      {getAlertIcon(alert.severity)}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        {alert.devices?.name || 'Unknown Device'}
-                      </p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <Badge variant="outline" className="text-[10px] uppercase">{alert.status}</Badge>
-                        <span className="text-xs text-muted-foreground">{alert.devices?.location}</span>
+              <>
+                {alerts.map((alert) => (
+                  <div 
+                    key={alert.id} 
+                    onClick={() => router.push(`/alerts/${alert.id}`)}
+                    className="flex items-center justify-between p-4 hover:bg-muted/20 cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-full bg-muted p-2">
+                        {getAlertIcon(alert.severity)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          {alert.devices?.name || 'Unknown Device'}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <Badge variant="outline" className="text-[10px] uppercase">{alert.status}</Badge>
+                          <span className="text-xs text-muted-foreground">{alert.devices?.location}</span>
+                        </div>
                       </div>
                     </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground font-mono">
+                        {new Date(alert.timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground font-mono">
-                      {new Date(alert.timestamp).toLocaleTimeString()}
-                    </span>
-                  </div>
+                ))}
+                <div className="p-3 flex justify-center">
+                  {hasMore ? (
+                    <Button variant="outline" size="sm" onClick={loadMore} disabled={loadingMore}>
+                      {loadingMore ? 'Loading...' : `Load older (${PAGE_SIZE} more)`}
+                    </Button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground py-2">End of history</span>
+                  )}
                 </div>
-              ))
+              </>
             )}
           </div>
         </TabsContent>
