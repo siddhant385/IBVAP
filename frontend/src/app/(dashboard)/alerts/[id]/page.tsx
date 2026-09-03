@@ -9,6 +9,7 @@ import { AlertTriageActions } from '../_components/AlertTriageActions'
 import { AlertSidebarContext } from '../_components/AlertSidebarContext'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ObjectDetectionsGrid } from '../_components/ObjectDetectionsGrid'
+import { AlertPaginationNav } from '../_components/AlertPaginationNav'
 
 export default async function AlertInvestigationPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient()
@@ -27,7 +28,24 @@ export default async function AlertInvestigationPage({ params }: { params: Promi
 
   if (error || !alert) notFound()
 
-  // 2. Fetch Detections
+  // 2. Fetch Prev/Next Alert IDs for Navigation
+  const { data: prevAlert } = await supabase
+    .from('alerts')
+    .select('id')
+    .lt('timestamp', alert.timestamp)
+    .order('timestamp', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const { data: nextAlert } = await supabase
+    .from('alerts')
+    .select('id')
+    .gt('timestamp', alert.timestamp)
+    .order('timestamp', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+
+  // 3. Fetch Detections
   const { data: detections } = await supabase
     .from('detections')
     .select('*')
@@ -114,12 +132,18 @@ export default async function AlertInvestigationPage({ params }: { params: Promi
           </div>
         </div>
 
-        {/* Live Interactive Triage Header */}
-        <AlertTriageActions
-          alertId={alert.id}
-          initialStatus={alert.status || 'unacknowledged'}
-          severity={alert.severity || 'info'}
-        />
+        {/* Live Interactive Triage Header & Next/Prev Navigation */}
+        <div className="flex items-center gap-3">
+          <AlertPaginationNav
+            prevId={prevAlert?.id || null}
+            nextId={nextAlert?.id || null}
+          />
+          <AlertTriageActions
+            alertId={alert.id}
+            initialStatus={alert.status || 'unacknowledged'}
+            severity={alert.severity || 'info'}
+          />
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
