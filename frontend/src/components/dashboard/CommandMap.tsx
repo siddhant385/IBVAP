@@ -16,6 +16,17 @@ interface CameraMarker {
   coordinates: [number, number]
 }
 
+const parseCoordsAny = (val: unknown): [number, number] => {
+  if (Array.isArray(val) && val.length === 2) {
+    return [Number(val[0]), Number(val[1])]
+  }
+  if (typeof val === 'string') {
+    const m = val.trim().match(/^\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)?$/)
+    if (m) return [Number(m[1]), Number(m[2])]
+  }
+  return [0, 0]
+}
+
 const defaultIcon = L.icon({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
@@ -58,9 +69,7 @@ export function CommandMap({ initialCameras }: { initialCameras: CameraMarker[] 
                 name: updated.name ?? null,
                 location: updated.location ?? null,
                 is_online: Boolean(updated.is_online),
-                coordinates: typeof updated.coordinates === 'string' 
-                  ? JSON.parse(updated.coordinates) 
-                  : updated.coordinates
+                coordinates: parseCoordsAny(updated.coordinates)
               }
               if (idx >= 0) {
                 const copy = [...prev]
