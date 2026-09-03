@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
-import { Bell, Map, ShieldAlert, Users, Video } from 'lucide-react'
+import { Bell, Map, ShieldAlert, Users, Video, Eye } from 'lucide-react'
 import Link from 'next/link'
 
 export default async function DashboardLayout({
@@ -37,6 +37,10 @@ export default async function DashboardLayout({
           <Link href="/alerts" className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
             <Bell className="h-4 w-4" />
             Investigation
+          </Link>
+          <Link href="/intelligence/godseye" className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+            <Eye className="h-4 w-4" />
+            God&apos;s Eye
           </Link>
           <Link href="/intelligence/faces" className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
             <Users className="h-4 w-4" />
