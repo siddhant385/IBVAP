@@ -49,7 +49,6 @@ export function useCanvasDrawing({
     }
 
     if (!snapshotUrl) {
-      setImageLoaded(false)
       renderCanvas(null)
       return
     }

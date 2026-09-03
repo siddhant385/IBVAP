@@ -66,7 +66,7 @@ export function AlertsKpiRibbon({
       <Card className="border-border/50">
         <CardContent className="p-4 flex items-center justify-between">
           <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Today's Alerts</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Today&apos;s Alerts</p>
             <p className="text-2xl font-bold">{totalToday}</p>
           </div>
           <div className="rounded-full bg-muted p-2.5 text-muted-foreground">

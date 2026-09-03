@@ -6,7 +6,6 @@ import { useToastManager } from '@/components/ui/toast'
 import { createClient } from '@/utils/supabase/client'
 import type { Json } from '@/types/database.types'
 import { 
-  TrashIcon, 
   FloppyDiskIcon, 
   ArrowCounterClockwiseIcon, 
   CheckIcon,

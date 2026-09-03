@@ -31,9 +31,10 @@ export function RemoveFaceButton({ faceId, imagePath }: RemoveFaceButtonProps) {
       if (error) throw error
 
       router.refresh()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error removing face:', error)
-      alert(`Failed to remove profile: ${error.message || 'Unknown error'}`)
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      alert(`Failed to remove profile: ${message}`)
     } finally {
       setLoading(false)
     }

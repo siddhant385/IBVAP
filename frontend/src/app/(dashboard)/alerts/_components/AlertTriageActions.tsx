@@ -1,12 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/utils/supabase/client'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { CheckCircle2, EyeOff, ShieldAlert } from 'lucide-react'
-import { Spinner } from '@/components/ui/spinner'
-import { useRouter } from 'next/navigation'
+import { createClient } from '@/utils/supabase/client'
 
 interface Props {
   alertId: string
@@ -14,7 +12,7 @@ interface Props {
   severity: string
 }
 
-export function AlertTriageActions({ alertId, initialStatus, severity }: Props) {
+export function AlertTriageActions({ alertId, initialStatus }: Props) {
   const [status, setStatus] = useState(initialStatus)
   const [loading, setLoading] = useState(false)
   const supabase = createClient()

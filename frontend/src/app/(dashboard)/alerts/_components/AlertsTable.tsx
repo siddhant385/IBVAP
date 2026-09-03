@@ -14,8 +14,20 @@ import {
 } from '@/components/ui/table'
 import { AlertCircle, AlertTriangle, ShieldCheck, CornerDownLeft } from 'lucide-react'
 
+interface AlertRecord {
+  id: string
+  timestamp: string
+  severity?: string
+  status?: string
+  raw_payload?: { feature?: string }
+  detections?: { feature?: string }[]
+  devices?: { name?: string | null; location?: string | null }
+  face_results?: unknown[]
+  anpr_results?: { is_flagged?: boolean }[]
+}
+
 interface AlertsTableProps {
-  alerts: any[]
+  alerts: AlertRecord[]
 }
 
 export function AlertsTable({ alerts }: AlertsTableProps) {
@@ -93,8 +105,8 @@ export function AlertsTable({ alerts }: AlertsTableProps) {
           </TableHeader>
           <TableBody>
             {alerts?.map((alert, index) => {
-              const hasFaceMatch = alert.face_results?.length > 0
-              const hasPlateMatch = alert.anpr_results?.some((r: any) => r.is_flagged)
+              const hasFaceMatch = Boolean(alert.face_results && alert.face_results.length > 0)
+              const hasPlateMatch = Boolean(alert.anpr_results?.some((r) => r.is_flagged))
               const isSelected = index === selectedIndex
 
               return (

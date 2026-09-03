@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
-import { AlertCircle, ShieldAlert, CheckCircle2, AlertTriangle, EyeOff, Info, ExternalLink } from 'lucide-react'
+import { AlertCircle, ShieldAlert, CheckCircle2, AlertTriangle, EyeOff, Info } from 'lucide-react'
 import { Database } from '@/types/database.types'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'

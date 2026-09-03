@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Activity, ShieldCheck, Users, Video, AlertTriangle } from 'lucide-react'
+import { Activity, ShieldCheck, Users, AlertTriangle } from 'lucide-react'
 
 export function RealtimeKpiRibbon({
   initialTotalDevices,

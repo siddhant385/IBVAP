@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -15,12 +15,7 @@ interface Props {
 
 export function AlertsFilterBar({ devices, currentParams }: Props) {
   const router = useRouter()
-  const [search, setSearch] = useState(currentParams.q || '')
-
-  // Sync state if params change externally
-  useEffect(() => {
-    setSearch(currentParams.q || '')
-  }, [currentParams.q])
+  const [search, setSearch] = useState('')
 
   const updateFilter = (key: string, value: string) => {
     const params = new URLSearchParams(currentParams)

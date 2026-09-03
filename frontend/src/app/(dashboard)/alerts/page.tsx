@@ -6,7 +6,7 @@ import { AlertsFilterBar } from './_components/AlertsFilterBar'
 import { AlertsTable } from './_components/AlertsTable'
 import { AlertsTablePagination } from './_components/AlertsTablePagination'
 import { NodeAlertsDistributionTable } from './_components/NodeAlertsDistributionTable'
-import { Activity, ShieldAlert, Table as TableIcon, Cpu } from 'lucide-react'
+import { ShieldAlert, Table as TableIcon, Cpu } from 'lucide-react'
 
 export default async function AlertsPage({
   searchParams,

@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -10,8 +10,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Cpu, Camera, Bell, ExternalLink } from 'lucide-react'
+import { Cpu, Bell } from 'lucide-react'
 import Link from 'next/link'
+
+interface DeviceDistributionRow {
+  id: string
+  name: string | null
+  location: string | null
+  is_online: boolean
+  alerts?: { count: number }[]
+}
 
 export async function NodeAlertsDistributionTable() {
   const supabase = await createClient()
@@ -24,18 +32,6 @@ export async function NodeAlertsDistributionTable() {
       name,
       location,
       is_online,
-      alerts ( count )
-    `)
-    .order('name')
-
-  // 2. Fetch cameras with alert counts
-  const { data: cameras } = await supabase
-    .from('cameras')
-    .select(`
-      id,
-      name,
-      is_online,
-      device_id,
       alerts ( count )
     `)
     .order('name')
@@ -63,7 +59,7 @@ export async function NodeAlertsDistributionTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {devices?.map((d: any) => {
+            {(devices as DeviceDistributionRow[] | null)?.map((d) => {
               const alertCount = d.alerts?.[0]?.count || 0
 
               return (

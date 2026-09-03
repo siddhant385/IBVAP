@@ -1,6 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Cpu, Target, User, Car, ShieldAlert, Activity } from 'lucide-react'
+import { Cpu, Target, User, Car } from 'lucide-react'
 
 interface DetectionItem {
   id: string

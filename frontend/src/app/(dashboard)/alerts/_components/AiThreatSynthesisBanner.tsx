@@ -2,9 +2,15 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ShieldAlert, ShieldCheck } from 'lucide-react'
 
+interface MatchRecord {
+  similarity_score?: number
+  known_faces?: { name?: string }
+  plate_text?: string
+}
+
 interface Props {
-  faceMatches: any[]
-  anprMatches: any[]
+  faceMatches: MatchRecord[]
+  anprMatches: MatchRecord[]
   severity: string
 }
 

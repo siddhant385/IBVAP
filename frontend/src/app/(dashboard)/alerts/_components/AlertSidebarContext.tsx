@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Camera, RefreshCw, Volume2, CheckCircle, Info, MapPin, ExternalLink } from 'lucide-react'
+import { Camera, RefreshCw, CheckCircle, Info, MapPin, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 
 interface Props {
@@ -112,7 +112,7 @@ export function AlertSidebarContext({ deviceId, deviceName, deviceLocation, came
           {commandSent && (
             <div className="p-2.5 rounded bg-green-500/10 border border-green-500/30 text-green-500 text-xs flex items-center gap-2 mt-2">
               <CheckCircle className="size-3.5" />
-              Sent '{commandSent}' command to node.
+              Sent &apos;{commandSent}&apos; command to node.
             </div>
           )}
         </CardContent>

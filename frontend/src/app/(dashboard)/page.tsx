@@ -1,13 +1,16 @@
 import { createClient } from '@/utils/supabase/server'
 import { RealtimeAlertFeed } from '@/app/(dashboard)/alerts/_components/RealtimeAlertFeed'
 import { RealtimeKpiRibbon } from '@/components/dashboard/RealtimeKpiRibbon'
+import { DynamicCommandMap } from '@/components/dashboard/DynamicCommandMap'
+import { DetectionAlertTrendChart } from '@/components/dashboard/DetectionAlertTrendChart'
+import { WatchlistMatchFeed } from '@/components/dashboard/WatchlistMatchFeed'
 
 export default async function CommandCenterPage() {
   const supabase = await createClient()
 
-  // Fetch quick stats concurrently for initial server render
+  // Fetch quick stats & initial datasets concurrently
   const todayStart = new Date(new Date().setHours(0,0,0,0)).toISOString()
-  
+
   const [
     { count: totalDevices },
     { count: onlineDevices },
@@ -15,7 +18,12 @@ export default async function CommandCenterPage() {
     { count: activeThreats },
     { count: activeCameras },
     { count: faceMatches },
-    { count: plateMatches }
+    { count: plateMatches },
+    { data: cameraMarkers },
+    { data: recentDetections },
+    { data: recentAlerts },
+    { data: recentFaceResults },
+    { data: recentAnprResults }
   ] = await Promise.all([
     supabase.from('devices').select('*', { count: 'exact', head: true }),
     supabase.from('devices').select('*', { count: 'exact', head: true }).eq('is_online', true),
@@ -25,10 +33,67 @@ export default async function CommandCenterPage() {
       .in('severity', ['warning', 'critical']),
     supabase.from('cameras').select('*', { count: 'exact', head: true }).eq('is_online', true),
     supabase.from('face_results').select('*', { count: 'exact', head: true }).not('matched_identity_id', 'is', null),
-    supabase.from('anpr_results').select('*', { count: 'exact', head: true }).eq('is_flagged', true)
+    supabase.from('anpr_results').select('*', { count: 'exact', head: true }).eq('is_flagged', true),
+    supabase.from('cameras').select('id, name, location, is_online, coordinates'),
+    supabase.from('detections').select('timestamp').gte('timestamp', todayStart),
+    supabase.from('alerts').select('timestamp').gte('timestamp', todayStart),
+    supabase.from('face_results').select('id, similarity_score, created_at, matched_identity_id').not('matched_identity_id', 'is', null).order('created_at', { ascending: false }).limit(5),
+    supabase.from('anpr_results').select('id, plate_text, plate_confidence, created_at, is_flagged').eq('is_flagged', true).order('created_at', { ascending: false }).limit(5)
   ])
 
   const totalWatchlistMatches = (faceMatches || 0) + (plateMatches || 0)
+
+  // Map hourly trend data for chart
+  const hourlyDataMap = new Map<string, { hour: string; detections: number; alerts: number }>()
+  for (let i = 0; i < 24; i += 4) {
+    const label = `${i.toString().padStart(2, '0')}:00`
+    hourlyDataMap.set(label, { hour: label, detections: 0, alerts: 0 })
+  }
+
+  if (recentDetections) {
+    recentDetections.forEach((d: { timestamp: string }) => {
+      const hour = new Date(d.timestamp).getHours()
+      const bucket = `${(Math.floor(hour / 4) * 4).toString().padStart(2, '0')}:00`
+      if (hourlyDataMap.has(bucket)) {
+        hourlyDataMap.get(bucket)!.detections += 1
+      }
+    })
+  }
+
+  if (recentAlerts) {
+    recentAlerts.forEach((a: { timestamp: string }) => {
+      const hour = new Date(a.timestamp).getHours()
+      const bucket = `${(Math.floor(hour / 4) * 4).toString().padStart(2, '0')}:00`
+      if (hourlyDataMap.has(bucket)) {
+        hourlyDataMap.get(bucket)!.alerts += 1
+      }
+    })
+  }
+
+  const trendChartData = Array.from(hourlyDataMap.values())
+
+  // Initial watchlist feed items
+  const initialMatches = [
+    ...(recentFaceResults || []).map((f) => ({
+      id: f.id,
+      type: 'face' as const,
+      title: 'Identity Match Detected',
+      subtitle: `Similarity: ${((f.similarity_score || 0) * 100).toFixed(1)}%`,
+      timestamp: new Date(f.created_at).toLocaleTimeString()
+    })),
+    ...(recentAnprResults || []).map((a) => ({
+      id: a.id,
+      type: 'anpr' as const,
+      title: `Flagged Plate: ${a.plate_text || 'UNKNOWN'}`,
+      subtitle: `Confidence: ${((a.plate_confidence || 0) * 100).toFixed(1)}%`,
+      timestamp: new Date(a.created_at).toLocaleTimeString()
+    }))
+  ].slice(0, 5)
+
+  const parsedCameraMarkers = (cameraMarkers || []).map((cam) => ({
+    ...cam,
+    coordinates: typeof cam.coordinates === 'string' ? JSON.parse(cam.coordinates) : cam.coordinates
+  }))
 
   return (
     <div className="space-y-6">
@@ -38,9 +103,6 @@ export default async function CommandCenterPage() {
           <p className="text-muted-foreground">
             Real-time situational awareness across all deployed edge nodes.
           </p>
-        </div>
-        <div className="flex gap-2">
-          {/* Future: Global System Actions */}
         </div>
       </div>
 
@@ -54,45 +116,23 @@ export default async function CommandCenterPage() {
       />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        <div className="col-span-4 rounded-xl border border-border/50 bg-muted/20 flex flex-col items-center justify-center min-h-[600px] overflow-hidden relative">
-          {/* Placeholder for GIS Map */}
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary via-background to-background"></div>
-          <MapPinIcon className="h-16 w-16 text-primary mb-4 opacity-80 animate-bounce" />
-          <h3 className="text-xl font-medium text-foreground relative z-10">Geospatial Intelligence Map</h3>
-          <p className="text-sm text-muted-foreground mt-2 max-w-md text-center relative z-10">
-            Map integration plotting active edge devices (`devices.coordinates`) and correlating recent alert hot-spots.
-          </p>
-          <div className="mt-8 flex gap-4 relative z-10">
-            <div className="flex items-center gap-2 text-sm"><span className="h-3 w-3 rounded-full bg-green-500"></span> Online</div>
-            <div className="flex items-center gap-2 text-sm"><span className="h-3 w-3 rounded-full bg-destructive animate-pulse"></span> Alerting</div>
-            <div className="flex items-center gap-2 text-sm"><span className="h-3 w-3 rounded-full bg-muted-foreground"></span> Offline</div>
-          </div>
+        <div className="col-span-4 min-h-[450px]">
+          <DynamicCommandMap initialCameras={parsedCameraMarkers} />
         </div>
         
         <div className="col-span-3">
           <RealtimeAlertFeed />
         </div>
       </div>
-    </div>
-  )
-}
 
-function MapPinIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-      <circle cx="12" cy="10" r="3" />
-    </svg>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+        <div className="col-span-4 min-h-[300px]">
+          <DetectionAlertTrendChart data={trendChartData} />
+        </div>
+        <div className="col-span-3 min-h-[300px]">
+          <WatchlistMatchFeed initialMatches={initialMatches} />
+        </div>
+      </div>
+    </div>
   )
 }
