@@ -83,6 +83,7 @@ export function AlertsTable({ alerts }: AlertsTableProps) {
           <TableHeader className="bg-muted/50">
             <TableRow>
               <TableHead className="w-[180px]">Timestamp</TableHead>
+              <TableHead>Trigger Feature</TableHead>
               <TableHead>Location / Device</TableHead>
               <TableHead>Severity</TableHead>
               <TableHead>Status</TableHead>
@@ -107,6 +108,11 @@ export function AlertsTable({ alerts }: AlertsTableProps) {
                   <TableCell>
                     <div className="font-medium text-sm">{new Date(alert.timestamp).toLocaleDateString()}</div>
                     <div className="text-xs text-muted-foreground font-mono">{new Date(alert.timestamp).toLocaleTimeString()}</div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs capitalize font-medium">
+                      {(alert.raw_payload?.feature || alert.detections?.[0]?.feature || 'Security Event').replace('_', ' ')}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="font-medium text-sm">{alert.devices?.name || 'Unknown Node'}</div>
@@ -137,7 +143,7 @@ export function AlertsTable({ alerts }: AlertsTableProps) {
             })}
             {!alerts?.length && (
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                   No alerts found matching the criteria.
                 </TableCell>
               </TableRow>
