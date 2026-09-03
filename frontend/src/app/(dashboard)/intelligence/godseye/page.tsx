@@ -1,4 +1,4 @@
-import type { CameraNode, DetectionPing, FlaggedEntity, Zone } from '@/components/intelligence/GodsEyeClient'
+import type { CameraNode, DetectionPing, FlaggedEntity, Zone } from '@/components/intelligence/godseye/lib'
 import { GodsEyeLoader } from '@/components/intelligence/GodsEyeLoader'
 import { createClient } from '@/utils/supabase/server'
 

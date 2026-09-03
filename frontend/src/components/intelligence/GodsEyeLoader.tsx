@@ -2,10 +2,10 @@
 
 import dynamic from 'next/dynamic'
 import { Card } from '@/components/ui/card'
-import type { CameraNode, DetectionPing, FlaggedEntity, Zone } from './GodsEyeClient'
+import type { CameraNode, DetectionPing, FlaggedEntity, Zone } from './godseye/lib'
 
 const GodsEyeClient = dynamic(
-  () => import('./GodsEyeClient').then((m) => m.GodsEyeClient),
+  () => import('./godseye/GodsEyeClient').then((m) => m.GodsEyeClient),
   {
     ssr: false,
     loading: () => (
