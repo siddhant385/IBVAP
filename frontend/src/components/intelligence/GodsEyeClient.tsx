@@ -106,10 +106,10 @@ function FitBounds({ points }: { points: [number, number][] }) {
 }
 
 interface Props {
-  initialCameras: CameraNode[]
-  initialDetections: DetectionPing[]
-  initialFlagged: FlaggedEntity[]
-  initialZones: Zone[]
+  cameras: CameraNode[]
+  detections: DetectionPing[]
+  flagged: FlaggedEntity[]
+  zones: Zone[]
 }
 
 const threatWeight = (t: string | null) => {
@@ -121,7 +121,7 @@ const threatWeight = (t: string | null) => {
   return 0
 }
 
-export function GodsEyeClient({ initialCameras, initialDetections, initialFlagged, initialZones }: Props) {
+export function GodsEyeClient({ cameras: initialCameras, detections: initialDetections, flagged: initialFlagged, zones: initialZones }: Props) {
   const [cameras] = useState<CameraNode[]>(initialCameras)
   const [detections, setDetections] = useState<DetectionPing[]>(initialDetections)
   const [flagged] = useState<FlaggedEntity[]>(initialFlagged)
