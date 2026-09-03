@@ -80,8 +80,8 @@ export function CommandMap({ initialCameras }: { initialCameras: CameraMarker[] 
       <CardContent className="flex-1 min-h-[350px] p-0 relative overflow-hidden rounded-b-xl">
         <MapContainer center={center} zoom={13} className="h-full w-full min-h-[350px]">
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://bhashini.gov.in">Bhashini / Survey of India</a>'
+            url="https://tile.bhashini.gov.in/tile/{z}/{x}/{y}.png"
           />
           {cameras.map((cam) => (
             cam.coordinates ? (
