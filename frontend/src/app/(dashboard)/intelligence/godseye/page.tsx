@@ -32,7 +32,7 @@ export default async function GodsEyePage() {
     supabase.from('cameras').select('id, name, location, is_online, coordinates'),
     supabase
       .from('detections')
-      .select('id, camera_id, feature, class_name, confidence, timestamp, camera_coords')
+      .select('id, camera_id, feature, class_name, confidence, timestamp, camera_coords, evidence_path')
       .order('timestamp', { ascending: false })
       .limit(150),
     supabase
@@ -62,7 +62,7 @@ export default async function GodsEyePage() {
   }
 
   const cams = get<Array<{ id: string; name: string | null; location: string | null; is_online: boolean | null; coordinates: unknown }>>(0, [])
-  const dets = get<Array<{ id: string; camera_id: string | null; feature: string; class_name: string | null; confidence: number | null; timestamp: string | null; camera_coords: unknown }>>(1, [])
+  const dets = get<Array<{ id: string; camera_id: string | null; feature: string; class_name: string | null; confidence: number | null; timestamp: string | null; camera_coords: unknown; evidence_path: string | null }>>(1, [])
   const faces = get<Array<{ id: string; name: string; threat_level: string | null; last_seen_at: string | null; last_seen_camera_id: string | null; detection_count: number | null }>>(2, [])
   const plates = get<Array<{ id: string; plate_text: string; threat_level: string | null; last_seen_at: string | null; last_seen_camera_id: string | null; detection_count: number | null }>>(3, [])
   const zones = get<Array<{ id: string; name: string; type: string; polygon_wkt: string | null }>>(4, [])
@@ -89,6 +89,7 @@ export default async function GodsEyePage() {
       confidence: d.confidence,
       ts: d.timestamp ?? new Date().toISOString(),
       coords,
+      evidence_path: d.evidence_path,
       threat: 'low' as const,
     }]
   })
