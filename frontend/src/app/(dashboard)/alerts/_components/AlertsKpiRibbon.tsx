@@ -1,3 +1,7 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { createClient } from '@/utils/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
 import { AlertCircle, AlertTriangle, CheckCircle2, Bell } from 'lucide-react'
 
@@ -8,7 +12,55 @@ interface KpiProps {
   resolvedToday: number
 }
 
-export function AlertsKpiRibbon({ totalToday, unacknowledged, criticalCount, resolvedToday }: KpiProps) {
+export function AlertsKpiRibbon({
+  totalToday: initialTotal,
+  unacknowledged: initialUnack,
+  criticalCount: initialCritical,
+  resolvedToday: initialResolved,
+}: KpiProps) {
+  const [totalToday, setTotalToday] = useState(initialTotal)
+  const [unacknowledged, setUnacknowledged] = useState(initialUnack)
+  const [criticalCount, setCriticalCount] = useState(initialCritical)
+  const [resolvedToday, setResolvedToday] = useState(initialResolved)
+
+  useEffect(() => {
+    const supabase = createClient()
+
+    const channel = supabase
+      .channel('public:alerts:kpis')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'alerts' },
+        (payload) => {
+          setTotalToday((prev) => prev + 1)
+          if (payload.new.status === 'unacknowledged') {
+            setUnacknowledged((prev) => prev + 1)
+          }
+          if (payload.new.severity === 'critical' && payload.new.status === 'unacknowledged') {
+            setCriticalCount((prev) => prev + 1)
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'alerts' },
+        (payload) => {
+          if (payload.new.status === 'resolved') {
+            setResolvedToday((prev) => prev + 1)
+            setUnacknowledged((prev) => Math.max(0, prev - 1))
+            if (payload.new.severity === 'critical') {
+              setCriticalCount((prev) => Math.max(0, prev - 1))
+            }
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card className="border-border/50">
