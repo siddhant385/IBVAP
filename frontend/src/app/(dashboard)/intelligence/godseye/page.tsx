@@ -4,21 +4,31 @@ import { createClient } from '@/utils/supabase/server'
 
 const parsePoint = (val: unknown): [number, number] | null => {
   if (!val) return null
-  if (typeof val === 'string') {
-    try {
-      const p = JSON.parse(val)
-      if (Array.isArray(p) && p.length === 2) return [Number(p[0]), Number(p[1])]
-    } catch { /* ignore */ }
+  if (Array.isArray(val) && val.length === 2) {
+    const a = Number(val[0])
+    const b = Number(val[1])
+    if (!isNaN(a) && !isNaN(b)) return [a, b]
     return null
   }
-  if (Array.isArray(val) && val.length === 2) return [Number(val[0]), Number(val[1])]
+  if (typeof val === 'string') {
+    const trimmed = val.trim()
+    const paren = trimmed.match(/^\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)?$/)
+    if (paren) return [Number(paren[1]), Number(paren[2])]
+    try {
+      const p = JSON.parse(trimmed)
+      if (Array.isArray(p) && p.length === 2) return [Number(p[0]), Number(p[1])]
+    } catch { /* ignore */ }
+  }
+  if (typeof val === 'object' && val !== null && 'x' in val && 'y' in val) {
+    return [Number((val as { x: number }).x), Number((val as { y: number }).y)]
+  }
   return null
 }
 
 export default async function GodsEyePage() {
   const supabase = await createClient()
 
-  const [{ data: cams }, { data: dets }, { data: faces }, { data: plates }, { data: zones }] = await Promise.all([
+  const results = await Promise.allSettled([
     supabase.from('cameras').select('id, name, location, is_online, coordinates'),
     supabase
       .from('detections')
@@ -39,6 +49,23 @@ export default async function GodsEyePage() {
       .limit(20),
     supabase.from('zones').select('id, name, type, polygon_wkt'),
   ])
+
+  const get = <T,>(i: number, fallback: T): T => {
+    const r = results[i]
+    if (r.status === 'rejected') {
+      console.error('[godseye] query failed:', r.reason)
+      return fallback
+    }
+    const { data, error } = r.value as { data: T | null; error: unknown }
+    if (error) console.error('[godseye] query error:', error)
+    return (data ?? fallback) as T
+  }
+
+  const cams = get<Array<{ id: string; name: string | null; location: string | null; is_online: boolean | null; coordinates: unknown }>>(0, [])
+  const dets = get<Array<{ id: string; camera_id: string | null; feature: string; class_name: string | null; confidence: number | null; timestamp: string | null; camera_coords: unknown }>>(1, [])
+  const faces = get<Array<{ id: string; name: string; threat_level: string | null; last_seen_at: string | null; last_seen_camera_id: string | null; detection_count: number | null }>>(2, [])
+  const plates = get<Array<{ id: string; plate_text: string; threat_level: string | null; last_seen_at: string | null; last_seen_camera_id: string | null; detection_count: number | null }>>(3, [])
+  const zones = get<Array<{ id: string; name: string; type: string; polygon_wkt: string | null }>>(4, [])
 
   const cameraNameById = new Map((cams ?? []).map((c) => [c.id, c.name]))
 

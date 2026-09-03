@@ -76,14 +76,24 @@ const detectionIcon = (threat: DetectionPing['threat']) => {
 
 function parseCoords(value: unknown): [number, number] | null {
   if (!value) return null
-  if (typeof value === 'string') {
-    try {
-      const parsed = JSON.parse(value)
-      if (Array.isArray(parsed) && parsed.length === 2) return [Number(parsed[0]), Number(parsed[1])]
-    } catch { /* ignore */ }
+  if (Array.isArray(value) && value.length === 2) {
+    const a = Number(value[0])
+    const b = Number(value[1])
+    if (!isNaN(a) && !isNaN(b)) return [a, b]
     return null
   }
-  if (Array.isArray(value) && value.length === 2) return [Number(value[0]), Number(value[1])]
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    const paren = trimmed.match(/^\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)?$/)
+    if (paren) return [Number(paren[1]), Number(paren[2])]
+    try {
+      const parsed = JSON.parse(trimmed)
+      if (Array.isArray(parsed) && parsed.length === 2) return [Number(parsed[0]), Number(parsed[1])]
+    } catch { /* ignore */ }
+  }
+  if (typeof value === 'object' && value !== null && 'x' in value && 'y' in value) {
+    return [Number((value as { x: number }).x), Number((value as { y: number }).y)]
+  }
   return null
 }
 
