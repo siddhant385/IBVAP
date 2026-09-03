@@ -127,7 +127,7 @@ export function RealtimeAlertFeed() {
   )
 
   return (
-    <Card className="flex flex-col min-h-[500px] border-border/50">
+    <Card className="flex flex-col h-[500px] max-h-[500px] border-border/50">
       <CardHeader className="bg-muted/30 border-b border-border/50 py-4">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -142,7 +142,7 @@ export function RealtimeAlertFeed() {
         </div>
       </CardHeader>
       
-      <Tabs defaultValue="action-required" className="flex-1 flex flex-col">
+      <Tabs defaultValue="action-required" className="flex-1 flex flex-col min-h-0">
         <div className="px-4 border-b border-border/50">
           <TabsList className="w-full grid grid-cols-2 bg-transparent h-12">
             <TabsTrigger 

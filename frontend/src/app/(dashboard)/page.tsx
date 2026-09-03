@@ -131,12 +131,12 @@ export default async function CommandCenterPage() {
         initialWatchlistMatches={totalWatchlistMatches}
       />
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        <div className="col-span-4 min-h-[450px]">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7 items-stretch">
+        <div className="col-span-4 h-[500px]">
           <DynamicCommandMap initialCameras={parsedCameraMarkers} />
         </div>
         
-        <div className="col-span-3">
+        <div className="col-span-3 h-[500px]">
           <RealtimeAlertFeed />
         </div>
       </div>
