@@ -80,8 +80,8 @@ export function CommandMap({ initialCameras }: { initialCameras: CameraMarker[] 
       <CardContent className="flex-1 min-h-[350px] p-0 relative overflow-hidden rounded-b-xl">
         <MapContainer center={center} zoom={13} className="h-full w-full min-h-[350px]">
           <TileLayer
-            attribution='&copy; <a href="https://www.mapbox.com/">Mapbox</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://api.mapbox.com/styles/v1/planemad/ckf4xcet7231819mm2e8njlca/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoicGxhbmVtYWQiLCJhIjoiemdYSVVLRSJ9.g3lbg_eN0kztmsfIPxa9MQ"
+            attribution='&copy; <a href="https://www.openstreetmap.in/">OpenStreetMap India</a>'
+            url="https://api.mapbox.com/styles/v1/planemad/ckf4xcet7231819mm2e8njlca/tiles/256/{z}/{x}/{y}?access_token=pk.eyJ1IjoicGxhbmVtYWQiLCJhIjoiemdYSVVLRSJ9.g3lbg_eN0kztmsfIPxa9MQ"
           />
           {cameras.map((cam) => (
             cam.coordinates ? (
