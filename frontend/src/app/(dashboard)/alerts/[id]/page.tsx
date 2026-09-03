@@ -8,7 +8,7 @@ import { BBoxOverlay } from '../_components/BBoxOverlay'
 import { AlertTriageActions } from '../_components/AlertTriageActions'
 import { AlertSidebarContext } from '../_components/AlertSidebarContext'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
+import { ObjectDetectionsGrid } from '../_components/ObjectDetectionsGrid'
 
 export default async function AlertInvestigationPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient()
@@ -195,29 +195,8 @@ export default async function AlertInvestigationPage({ params }: { params: Promi
                   </div>
                 )}
 
-                {/* Grouped Object Breakdown */}
-                <div className="space-y-4">
-                  <h3 className="text-base font-semibold">Detected Bounding Box Objects</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {Object.entries(
-                      (detections || []).reduce((acc: Record<string, number>, det) => {
-                        const name = det.class_name || det.feature
-                        acc[name] = (acc[name] || 0) + 1
-                        return acc
-                      }, {})
-                    ).map(([name, count]) => (
-                      <Card key={name} className="p-4 flex flex-col items-center justify-center text-center bg-muted/20 border-border/50">
-                        <span className="text-2xl font-bold">{count}</span>
-                        <span className="text-xs text-muted-foreground capitalize mt-1">{name}s</span>
-                      </Card>
-                    ))}
-                    {!detections?.length && (
-                      <div className="col-span-full text-muted-foreground p-6 bg-muted/10 rounded-md text-center text-sm">
-                        No specific bounding box objects logged for this alert frame.
-                      </div>
-                    )}
-                  </div>
-                </div>
+                {/* Grouped & Individual Object Detections */}
+                <ObjectDetectionsGrid detections={detections || []} />
               </Card>
             </TabsContent>
             
@@ -256,16 +235,14 @@ export default async function AlertInvestigationPage({ params }: { params: Promi
                 </div>
 
                 <div className="pt-4 border-t border-border/50">
-                  <Accordion>
-                    <AccordionItem value="payload" className="border-0">
-                      <AccordionTrigger className="hover:no-underline py-2 text-sm font-medium">View Raw Telemetry Payload</AccordionTrigger>
-                      <AccordionContent>
-                        <pre className="p-4 rounded-md bg-black text-green-400 font-mono text-[11px] overflow-x-auto border border-border/50">
-                          {JSON.stringify(alert.raw_payload, null, 2)}
-                        </pre>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
+                  <details className="group">
+                    <summary className="cursor-pointer py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+                      View Raw Telemetry Payload
+                    </summary>
+                    <pre className="p-4 rounded-md bg-black text-green-400 font-mono text-[11px] overflow-x-auto border border-border/50 mt-2">
+                      {JSON.stringify(alert.raw_payload, null, 2)}
+                    </pre>
+                  </details>
                 </div>
               </Card>
             </TabsContent>

@@ -18,6 +18,7 @@ export default async function AlertsPage({
   const status = params.status as string
   const deviceId = params.device as string
   const dateRange = params.date as string
+  const objectClass = params.class as string
 
   // Query alerts for historical table
   let query = supabase
@@ -27,7 +28,8 @@ export default async function AlertsPage({
       devices ( name, location ),
       cameras ( name ),
       face_results ( id ),
-      anpr_results ( id, is_flagged )
+      anpr_results ( id, is_flagged ),
+      detections ( class_name )
     `)
     .order('timestamp', { ascending: false })
     .limit(100)
@@ -35,6 +37,7 @@ export default async function AlertsPage({
   if (severity && severity !== 'all') query = query.eq('severity', severity)
   if (status && status !== 'all') query = query.eq('status', status)
   if (deviceId && deviceId !== 'all') query = query.eq('device_id', deviceId)
+  if (objectClass && objectClass !== 'all') query = query.eq('detections.class_name', objectClass)
 
   const now = new Date()
   if (dateRange === 'today') {

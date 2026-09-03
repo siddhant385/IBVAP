@@ -5,7 +5,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
 
-export function AlertsFilterBar({ devices, currentParams }: { devices: any[], currentParams: Record<string, string> }) {
+interface Props {
+  devices: { id: string; name: string | null }[]
+  currentParams: Record<string, string>
+}
+
+export function AlertsFilterBar({ devices, currentParams }: Props) {
   const router = useRouter()
 
   const updateFilter = (key: string, value: string) => {
@@ -19,15 +24,16 @@ export function AlertsFilterBar({ devices, currentParams }: { devices: any[], cu
   }
 
   const clearFilters = () => {
-    router.push(`/alerts`)
+    router.push('/alerts')
   }
 
   const hasFilters = Object.keys(currentParams).length > 0
 
   return (
-    <div className="flex flex-wrap items-center gap-2 p-3 bg-card rounded-md border border-border/50">
+    <div className="flex flex-wrap items-center gap-2 p-3 bg-card rounded-lg border border-border/50">
+      {/* Date Range */}
       <Select defaultValue={currentParams.date || 'all'} onValueChange={(val) => updateFilter('date', val || '')}>
-        <SelectTrigger className="w-[140px] h-8 text-xs">
+        <SelectTrigger className="w-[130px] h-8 text-xs">
           <SelectValue placeholder="Date Range" />
         </SelectTrigger>
         <SelectContent>
@@ -37,8 +43,9 @@ export function AlertsFilterBar({ devices, currentParams }: { devices: any[], cu
         </SelectContent>
       </Select>
 
+      {/* Severity */}
       <Select defaultValue={currentParams.severity || 'all'} onValueChange={(val) => updateFilter('severity', val || '')}>
-        <SelectTrigger className="w-[140px] h-8 text-xs">
+        <SelectTrigger className="w-[130px] h-8 text-xs">
           <SelectValue placeholder="Severity" />
         </SelectTrigger>
         <SelectContent>
@@ -49,6 +56,7 @@ export function AlertsFilterBar({ devices, currentParams }: { devices: any[], cu
         </SelectContent>
       </Select>
 
+      {/* Status */}
       <Select defaultValue={currentParams.status || 'all'} onValueChange={(val) => updateFilter('status', val || '')}>
         <SelectTrigger className="w-[140px] h-8 text-xs">
           <SelectValue placeholder="Status" />
@@ -62,21 +70,35 @@ export function AlertsFilterBar({ devices, currentParams }: { devices: any[], cu
         </SelectContent>
       </Select>
 
+      {/* Object Class Filter */}
+      <Select defaultValue={currentParams.class || 'all'} onValueChange={(val) => updateFilter('class', val || '')}>
+        <SelectTrigger className="w-[140px] h-8 text-xs">
+          <SelectValue placeholder="Object Class" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Classes</SelectItem>
+          <SelectItem value="person">Person</SelectItem>
+          <SelectItem value="car">Vehicle / Car</SelectItem>
+          <SelectItem value="backpack">Baggage / Backpack</SelectItem>
+        </SelectContent>
+      </Select>
+
+      {/* Device */}
       <Select defaultValue={currentParams.device || 'all'} onValueChange={(val) => updateFilter('device', val || '')}>
-        <SelectTrigger className="w-[160px] h-8 text-xs">
+        <SelectTrigger className="w-[150px] h-8 text-xs">
           <SelectValue placeholder="All Devices" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Devices</SelectItem>
           {devices.map((d) => (
-            <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+            <SelectItem key={d.id} value={d.id}>{d.name || d.id}</SelectItem>
           ))}
         </SelectContent>
       </Select>
 
       {hasFilters && (
-        <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 text-xs ml-auto">
-          <X className="h-3 w-3 mr-1" /> Clear Filters
+        <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 text-xs ml-auto gap-1 text-muted-foreground">
+          <X className="size-3" /> Clear Filters
         </Button>
       )}
     </div>
