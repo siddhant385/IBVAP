@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { createClient } from '@/utils/supabase/client'
 import { MapContainer, TileLayer, Marker, Popup, GeoJSON } from 'react-leaflet'
+import { useTheme } from 'next-themes'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -25,7 +26,12 @@ const defaultIcon = L.icon({
 export function CommandMap({ initialCameras }: { initialCameras: CameraMarker[] }) {
   const [cameras, setCameras] = useState<CameraMarker[]>(initialCameras)
   const [geoJsonData, setGeoJsonData] = useState<GeoJSON.FeatureCollection | null>(null)
+  const { resolvedTheme } = useTheme()
   const supabase = createClient()
+
+  const tileUrl = resolvedTheme === 'dark'
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
 
   useEffect(() => {
     fetch('/india-composite.geojson')
@@ -88,18 +94,20 @@ export function CommandMap({ initialCameras }: { initialCameras: CameraMarker[] 
       <CardContent className="flex-1 min-h-[350px] p-0 relative overflow-hidden rounded-b-xl">
         <MapContainer center={center} zoom={13} className="h-full w-full min-h-[350px]">
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            key={resolvedTheme}
+            attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url={tileUrl}
           />
           {geoJsonData && (
             <GeoJSON
+              key={`geojson-${resolvedTheme}`}
               data={geoJsonData}
               style={{
-                color: '#3b82f6',
+                color: resolvedTheme === 'dark' ? '#60a5fa' : '#2563eb',
                 weight: 2,
                 opacity: 0.8,
-                fillColor: '#3b82f6',
-                fillOpacity: 0.05,
+                fillColor: resolvedTheme === 'dark' ? '#3b82f6' : '#93c5fd',
+                fillOpacity: 0.08,
               }}
             />
           )}
