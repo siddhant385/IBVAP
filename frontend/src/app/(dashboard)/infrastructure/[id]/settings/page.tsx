@@ -1,13 +1,12 @@
 import { createClient } from '@/utils/supabase/server'
 import { CameraSettingsForm } from './_components/CameraSettingsForm'
 import { DeviceCameraMatrix } from './_components/DeviceCameraMatrix'
-import { ChevronLeft } from 'lucide-react'
+import { CaretLeftIcon, VideoCameraIcon, CpuIcon } from '@phosphor-icons/react/dist/ssr'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Camera, Cpu } from 'lucide-react'
 
 export default async function DeviceSettingsPage(props: { params: Promise<{ id: string }>, searchParams: Promise<{ camera?: string }> }) {
   const supabase = await createClient()
@@ -49,11 +48,11 @@ export default async function DeviceSettingsPage(props: { params: Promise<{ id: 
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <Link 
-            href={`/infrastructure/${deviceId}`} 
+          <Link
+            href={`/infrastructure/${deviceId}`}
             className="rounded-lg p-2 hover:bg-muted text-muted-foreground transition-colors"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <CaretLeftIcon className="h-5 w-5" />
           </Link>
           <div>
             <h2 className="text-2xl font-bold tracking-tight">{device.name || 'Unnamed Device'}</h2>
@@ -108,7 +107,7 @@ export default async function DeviceSettingsPage(props: { params: Promise<{ id: 
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-primary/10">
-                <Camera className="h-5 w-5 text-primary" />
+                <VideoCameraIcon className="h-5 w-5 text-primary" weight="duotone" />
               </div>
               <div>
                 <CardTitle>Select a Camera</CardTitle>
@@ -135,7 +134,7 @@ export default async function DeviceSettingsPage(props: { params: Promise<{ id: 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Cpu className="h-4 w-4" />
+                  <CpuIcon className="h-4 w-4" weight="duotone" />
                   <span>Device: {device.name || device.device_id}</span>
                 </div>
                 <div className="h-4 w-px bg-border" />

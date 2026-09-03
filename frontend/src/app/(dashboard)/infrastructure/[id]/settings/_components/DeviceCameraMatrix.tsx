@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Settings2, VideoOff } from 'lucide-react'
+import { GearIcon, VideoCameraSlashIcon } from '@phosphor-icons/react/dist/ssr'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import { Database } from '@/types/database.types'
@@ -83,7 +83,7 @@ export function DeviceCameraMatrix({
   if (cameras.length === 0) {
     return (
       <div className="flex min-h-[300px] flex-col items-center justify-center rounded-lg border border-dashed border-border/50 bg-background/50 p-8 text-center">
-        <VideoOff className="h-10 w-10 text-muted-foreground mb-4" />
+        <VideoCameraSlashIcon className="h-10 w-10 text-muted-foreground mb-4" weight="duotone" />
         <h3 className="text-lg font-semibold">No cameras found</h3>
         <p className="mt-2 text-sm text-muted-foreground max-w-md">
           This device has no cameras configured yet.
@@ -122,7 +122,7 @@ export function DeviceCameraMatrix({
                     size="sm" 
                     className={`gap-2 ${showSelectButton ? '' : 'opacity-0 group-hover:opacity-100 transition-opacity'}`}
                   >
-                    <Settings2 className="h-4 w-4" />
+                    <GearIcon className="h-4 w-4" />
                     <span className="hidden sm:inline">{showSelectButton ? 'Select' : 'Settings'}</span>
                   </Button>
                 </Link>

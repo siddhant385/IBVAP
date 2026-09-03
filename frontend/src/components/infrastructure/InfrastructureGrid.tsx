@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { MapPin, Activity, Settings2 } from 'lucide-react'
+import { MapPinIcon, ActivityIcon, GearIcon } from '@phosphor-icons/react/dist/ssr'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/utils/supabase/client'
@@ -78,7 +78,7 @@ export function InfrastructureGrid({ initialDevices }: { initialDevices: Device[
               <div>
                 <CardTitle className="text-lg">{device.name}</CardTitle>
                 <CardDescription className="flex items-center gap-1 mt-1">
-                  <MapPin className="h-3 w-3" />
+                  <MapPinIcon className="h-3 w-3" weight="duotone" />
                   {device.location || 'Unknown location'}
                 </CardDescription>
               </div>
@@ -90,7 +90,7 @@ export function InfrastructureGrid({ initialDevices }: { initialDevices: Device[
           <CardContent className="flex-1">
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Activity className="h-4 w-4" />
+                <ActivityIcon className="h-4 w-4" weight="duotone" />
                 Last seen: {device.last_seen_at ? new Date(device.last_seen_at).toLocaleString() : 'Never'}
               </div>
               
@@ -113,7 +113,7 @@ export function InfrastructureGrid({ initialDevices }: { initialDevices: Device[
                         </Badge>
                         <Link href={`/infrastructure/${device.id}/settings?camera=${camera.id}`} passHref>
                           <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Settings2 className="h-4 w-4" />
+                            <GearIcon className="h-4 w-4" />
                             <span className="sr-only">Configure</span>
                           </Button>
                         </Link>
@@ -130,8 +130,8 @@ export function InfrastructureGrid({ initialDevices }: { initialDevices: Device[
           <div className="p-4 pt-0 mt-auto">
             <Link href={`/infrastructure/${device.id}/settings`} passHref>
               <Button variant="outline" className="w-full gap-2">
-                <Settings2 className="h-4 w-4" />
-                Configure Virtual Fences
+                <GearIcon className="h-4 w-4" />
+                Manage Cameras
               </Button>
             </Link>
           </div>
