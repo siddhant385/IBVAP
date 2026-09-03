@@ -20,6 +20,7 @@ export default async function AlertsPage({
   const deviceId = params.device as string
   const dateRange = params.date as string
   const objectClass = params.class as string
+  const searchQuery = params.q as string
 
   // Query alerts for historical table
   let query = supabase
@@ -39,6 +40,7 @@ export default async function AlertsPage({
   if (status && status !== 'all') query = query.eq('status', status)
   if (deviceId && deviceId !== 'all') query = query.eq('device_id', deviceId)
   if (objectClass && objectClass !== 'all') query = query.eq('detections.class_name', objectClass)
+  if (searchQuery) query = query.or(`id.ilike.%${searchQuery}%`)
 
   const now = new Date()
   if (dateRange === 'today') {
