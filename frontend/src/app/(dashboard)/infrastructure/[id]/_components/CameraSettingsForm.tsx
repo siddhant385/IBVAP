@@ -117,7 +117,7 @@ export function CameraSettingsForm({
   hardwareCameraId,
   initialSettings 
 }: CameraSettingsFormProps) {
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
   const [settings, setSettings] = useState<CameraSettingsData>(initialSettings || {})
   const [isSaving, setIsSaving] = useState(false)
   const [isCameraOnline, setIsCameraOnline] = useState<boolean | null>(null)
@@ -189,6 +189,52 @@ export function CameraSettingsForm({
       supabase.removeChannel(channel)
     }
   }, [supabase, hardwareDeviceId])
+
+  // Subscribe to camera_settings row for this camera.
+  // If another tab/window or the edge device updates settings, refresh the form
+  // and warn if the user has unsaved local edits.
+  useEffect(() => {
+    if (!hardwareCameraId) return
+
+    let isDirty = false
+    const onUserInput = () => { isDirty = true }
+
+    const channel = supabase
+      .channel(`camera_settings:${hardwareCameraId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'camera_settings',
+          filter: `camera_id=eq.${hardwareCameraId}`
+        },
+        (payload) => {
+          if (isDirty) {
+            toast.add({
+              type: 'warning',
+              title: 'Settings changed elsewhere',
+              description: 'Reload the page to see the latest values from the edge device.',
+            })
+            return
+          }
+          const row = payload.new as { settings?: CameraSettingsData } | undefined
+          if (row?.settings) {
+            setSettings(row.settings)
+          }
+        }
+      )
+      .subscribe()
+
+    window.addEventListener('pointerdown', onUserInput, { passive: true })
+    window.addEventListener('keydown', onUserInput)
+
+    return () => {
+      window.removeEventListener('pointerdown', onUserInput)
+      window.removeEventListener('keydown', onUserInput)
+      supabase.removeChannel(channel)
+    }
+  }, [supabase, hardwareCameraId, toast])
 
   const getDetectionMode = useCallback((): DetectionMode => {
     const plugins = settings.enabled_plugins || []

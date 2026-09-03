@@ -62,6 +62,53 @@ export function InfrastructureGrid({ initialDevices }: { initialDevices: Device[
           }
         }
       )
+      // Keep camera online badges fresh on the list page
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'cameras' },
+        (payload) => {
+          const updated = payload.new as { id: string; is_online: boolean }
+          setDevices((currentDevices) =>
+            currentDevices.map((device) =>
+              (device.cameras || []).some((c) => c.id === updated.id)
+                ? {
+                    ...device,
+                    cameras: (device.cameras || []).map((c) =>
+                      c.id === updated.id ? { ...c, is_online: updated.is_online } : c
+                    ),
+                  }
+                : device
+            )
+          )
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'cameras' },
+        (payload) => {
+          const newCamera = payload.new as Database['public']['Tables']['cameras']['Row']
+          setDevices((currentDevices) =>
+            currentDevices.map((device) =>
+              device.id === newCamera.device_id
+                ? { ...device, cameras: [...(device.cameras || []), newCamera] }
+                : device
+            )
+          )
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'cameras' },
+        (payload) => {
+          const oldCamera = payload.old as { id: string }
+          setDevices((currentDevices) =>
+            currentDevices.map((device) => ({
+              ...device,
+              cameras: (device.cameras || []).filter((c) => c.id !== oldCamera.id),
+            }))
+          )
+        }
+      )
       .subscribe()
 
     return () => {

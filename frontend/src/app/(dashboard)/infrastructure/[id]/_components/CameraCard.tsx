@@ -25,7 +25,7 @@ interface CameraCardProps {
 }
 
 export function CameraCard({ deviceId, camera }: CameraCardProps) {
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
   const [isOnline, setIsOnline] = useState(camera.is_online)
   const [detectionCount, setDetectionCount] = useState(0)
 

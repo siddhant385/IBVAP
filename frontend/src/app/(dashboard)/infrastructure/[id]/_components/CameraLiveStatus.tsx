@@ -80,7 +80,8 @@ export function CameraLiveStatus({
     fetchInitial()
   }, [supabase, cameraId])
 
-  // Subscribe to recent detections and pending commands
+  // Subscribe to recent detections and pending commands.
+  // Initial fetch covers the "last 30s" count; INSERT events keep it live.
   useEffect(() => {
     const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString()
 
@@ -90,10 +91,9 @@ export function CameraLiveStatus({
         .select('*', { count: 'exact', head: true })
         .eq('camera_id', cameraId)
         .gte('created_at', thirtySecondsAgo)
-      
+
       setDetectionStats(prev => ({ ...prev, recentCount: count || 0 }))
 
-      // Get latest detection
       const { data: latest } = await supabase
         .from('detections')
         .select('created_at')
@@ -101,7 +101,7 @@ export function CameraLiveStatus({
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle()
-      
+
       if (latest) {
         setDetectionStats(prev => ({ ...prev, lastDetectionAt: latest.created_at }))
       }
@@ -115,17 +115,12 @@ export function CameraLiveStatus({
         .eq('device_id', hardwareDeviceId)
         .eq('camera_id', cameraId)
         .eq('status', 'pending')
-      
+
       setCommandStats({ pendingCount: count || 0 })
     }
 
     fetchDetectionStats()
     fetchCommandStats()
-
-    const interval = setInterval(() => {
-      fetchDetectionStats()
-      fetchCommandStats()
-    }, 5000)
 
     // Subscribe to new detections
     const detectionChannel = supabase
@@ -164,7 +159,6 @@ export function CameraLiveStatus({
       : null
 
     return () => {
-      clearInterval(interval)
       supabase.removeChannel(detectionChannel)
       if (commandChannel) supabase.removeChannel(commandChannel)
     }
