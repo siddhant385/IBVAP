@@ -4,6 +4,7 @@ import { AlertsKpiRibbon } from './_components/AlertsKpiRibbon'
 import { RealtimeAlertFeed } from './_components/RealtimeAlertFeed'
 import { AlertsFilterBar } from './_components/AlertsFilterBar'
 import { AlertsTable } from './_components/AlertsTable'
+import { AlertsTablePagination } from './_components/AlertsTablePagination'
 import { NodeAlertsDistributionTable } from './_components/NodeAlertsDistributionTable'
 import { Activity, ShieldAlert, Table as TableIcon, Cpu } from 'lucide-react'
 
@@ -22,7 +23,12 @@ export default async function AlertsPage({
   const objectClass = params.class as string
   const searchQuery = params.q as string
 
-  // Query alerts for historical table
+  const page = parseInt((params.page as string) || '1', 10)
+  const pageSize = 15
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+
+  // Query alerts for historical table with range pagination & exact count
   let query = supabase
     .from('alerts')
     .select(`
@@ -32,9 +38,9 @@ export default async function AlertsPage({
       face_results ( id ),
       anpr_results ( id, is_flagged ),
       detections ( class_name )
-    `)
+    `, { count: 'exact' })
     .order('timestamp', { ascending: false })
-    .limit(100)
+    .range(from, to)
 
   if (severity && severity !== 'all') query = query.eq('severity', severity)
   if (status && status !== 'all') query = query.eq('status', status)
@@ -51,8 +57,10 @@ export default async function AlertsPage({
     query = query.gte('timestamp', now.toISOString())
   }
 
-  const { data: alerts, error } = await query
+  const { data: alerts, count: totalFilteredAlerts, error } = await query
   const { data: devices } = await supabase.from('devices').select('id, name').order('name')
+
+  const totalPages = Math.ceil((totalFilteredAlerts || 0) / pageSize)
 
   if (error) console.error('Error fetching alerts:', error)
 
@@ -124,6 +132,13 @@ export default async function AlertsPage({
         <TabsContent value="historical" className="space-y-4 mt-0">
           <AlertsFilterBar devices={devices || []} currentParams={params as Record<string, string>} />
           <AlertsTable alerts={alerts || []} />
+          <AlertsTablePagination
+            currentPage={page}
+            totalPages={totalPages || 1}
+            totalCount={totalFilteredAlerts || 0}
+            pageSize={pageSize}
+            currentParams={params as Record<string, string>}
+          />
         </TabsContent>
       </Tabs>
     </div>
