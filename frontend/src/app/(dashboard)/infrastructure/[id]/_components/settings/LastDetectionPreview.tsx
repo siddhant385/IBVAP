@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { createClient } from '@/utils/supabase/client'
-import { EyeIcon, ClockIcon, TargetIcon } from '@phosphor-icons/react/dist/ssr'
+import { EyeIcon, ClockIcon, TargetIcon, ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
 import { cn } from '@/lib/utils'
 
 interface Detection {
@@ -20,6 +21,9 @@ interface Detection {
 interface LastDetectionPreviewProps {
   cameraId: string
   snapshotUrl: string | null
+  onRequestSnapshot?: () => void
+  isRequestingSnapshot?: boolean
+  snapshotStatus?: string
   // image natural width/height to scale normalized bbox; null until snapshot loads
   imageWidth: number | null
   imageHeight: number | null
@@ -48,12 +52,23 @@ function bboxToPercent(bbox: number[] | null, w: number, h: number) {
 export function LastDetectionPreview({
   cameraId,
   snapshotUrl,
+  onRequestSnapshot,
+  isRequestingSnapshot,
+  snapshotStatus,
   imageWidth,
   imageHeight,
 }: LastDetectionPreviewProps) {
   const [supabase] = useState(() => createClient())
   const [detection, setDetection] = useState<Detection | null>(null)
   const [loading, setLoading] = useState(true)
+  const [imgNaturalSize, setImgNaturalSize] = useState<{ w: number; h: number } | null>(null)
+  const imgRef = useRef<HTMLImageElement | null>(null)
+
+  useEffect(() => {
+    if (imageWidth && imageHeight) return
+    if (!imgRef.current?.naturalWidth) return
+    setImgNaturalSize({ w: imgRef.current.naturalWidth, h: imgRef.current.naturalHeight })
+  }, [snapshotUrl, detection?.evidence_path, imageWidth, imageHeight])
 
   // Initial fetch of most recent detection
   useEffect(() => {
@@ -99,7 +114,9 @@ export function LastDetectionPreview({
     ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/evidence/${detection.evidence_path}`
     : snapshotUrl
 
-  const bbox = bboxToPercent(detection?.bbox_xyxy ?? null, imageWidth ?? 0, imageHeight ?? 0)
+  const w = imageWidth ?? imgNaturalSize?.w ?? 0
+  const h = imageHeight ?? imgNaturalSize?.h ?? 0
+  const bbox = bboxToPercent(detection?.bbox_xyxy ?? null, w, h)
 
   return (
     <Card className="border-border/50">
@@ -118,7 +135,22 @@ export function LastDetectionPreview({
               {formatTimeAgo(detection.created_at)}
             </Badge>
           )}
+          {onRequestSnapshot && (
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={onRequestSnapshot}
+              disabled={isRequestingSnapshot}
+              aria-label="Fetch live snapshot"
+              title="Fetch live snapshot"
+            >
+              {isRequestingSnapshot ? <Spinner className="size-4" /> : <ArrowsClockwiseIcon className="size-4" />}
+            </Button>
+          )}
         </div>
+        {snapshotStatus && (
+          <p className="text-[11px] text-muted-foreground mt-1.5">{snapshotStatus}</p>
+        )}
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -132,17 +164,29 @@ export function LastDetectionPreview({
             <span className="text-xs">Live updates will appear here as soon as an event is detected.</span>
           </div>
         ) : (
-          <div className="relative overflow-hidden rounded-lg border bg-black">
+          <div className="relative overflow-hidden rounded-lg border bg-black min-h-[200px]">
             {previewSrc ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
+                ref={imgRef}
                 src={previewSrc}
                 alt="Last detection"
+                onLoad={(e) => {
+                  const img = e.currentTarget
+                  if (img.naturalWidth && img.naturalHeight) {
+                    setImgNaturalSize({ w: img.naturalWidth, h: img.naturalHeight })
+                  }
+                }}
                 className="block w-full h-auto"
               />
             ) : (
-              <div className="flex aspect-video items-center justify-center bg-muted text-xs text-muted-foreground">
-                No snapshot available
+              <div className="flex aspect-video flex-col items-center justify-center gap-2 bg-muted text-xs text-muted-foreground">
+                <span>No snapshot available</span>
+                {onRequestSnapshot && !isRequestingSnapshot && (
+                  <Button size="sm" variant="outline" onClick={onRequestSnapshot}>
+                    <ArrowsClockwiseIcon className="size-3.5 mr-1" /> Fetch snapshot
+                  </Button>
+                )}
               </div>
             )}
             {bbox && (

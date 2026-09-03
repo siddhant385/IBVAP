@@ -78,7 +78,7 @@ export function CameraSettingsForm({
   }, [])
 
   // Snapshot for the LastDetectionPreview overlay
-  const { snapshotUrl } = useSnapshot({
+  const { snapshotUrl, isRequestingSnapshot, snapshotStatus, requestSnapshot } = useSnapshot({
     hardwareDeviceId,
     hardwareCameraId,
   })
@@ -398,6 +398,9 @@ export function CameraSettingsForm({
         <LastDetectionPreview
           cameraId={cameraId}
           snapshotUrl={snapshotUrl}
+          onRequestSnapshot={requestSnapshot}
+          isRequestingSnapshot={isRequestingSnapshot}
+          snapshotStatus={snapshotStatus}
           imageWidth={null}
           imageHeight={null}
         />
