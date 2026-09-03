@@ -2,15 +2,16 @@ import { createClient } from '@/utils/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { CameraCard } from './_components/CameraCard'
+import { CameraSettingsForm } from './_components/CameraSettingsForm'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
-import { 
-  CaretLeftIcon, 
-  CpuIcon, 
-  WifiHighIcon, 
+import {
+  CaretLeftIcon,
+  CpuIcon,
+  WifiHighIcon,
   WifiSlashIcon,
   ClockIcon,
   VideoCameraIcon
@@ -19,10 +20,14 @@ import { Database } from '@/types/database.types'
 
 type Camera = Database['public']['Tables']['cameras']['Row']
 
-export default async function DeviceOverviewPage(props: { 
-  params: Promise<{ id: string }> 
+export default async function DeviceOverviewPage(props: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ camera?: string }>
 }) {
-  const { id } = await props.params
+  const [{ id }, { camera: selectedCameraId }] = await Promise.all([
+    props.params,
+    props.searchParams,
+  ])
   const supabase = await createClient()
 
   const { data: device, error } = await supabase
@@ -40,6 +45,21 @@ export default async function DeviceOverviewPage(props: {
 
   const cameras = (device.cameras || []) as Camera[]
   const onlineCameras = cameras.filter(c => c.is_online).length
+  const selectedCamera = selectedCameraId
+    ? cameras.find(c => c.id === selectedCameraId) ?? null
+    : null
+
+  // Fetch camera settings only when a camera is selected
+  let cameraSettings: Record<string, unknown> = {}
+  if (selectedCamera?.camera_id) {
+    const { data } = await supabase
+      .from('camera_settings')
+      .select('settings')
+      .eq('camera_id', selectedCamera.camera_id)
+      .maybeSingle()
+
+    cameraSettings = (data?.settings as Record<string, unknown>) ?? {}
+  }
 
   return (
     <div className="flex flex-col gap-6 pb-8">
@@ -65,10 +85,10 @@ export default async function DeviceOverviewPage(props: {
           </div>
         </div>
 
-        <Badge 
-          variant="outline" 
-          className={device.is_online 
-            ? "gap-1.5 bg-green-500/10 text-green-600 border-green-500/30 self-start" 
+        <Badge
+          variant="outline"
+          className={device.is_online
+            ? "gap-1.5 bg-green-500/10 text-green-600 border-green-500/30 self-start"
             : "gap-1.5 self-start"
           }
         >
@@ -94,7 +114,7 @@ export default async function DeviceOverviewPage(props: {
         <CardHeader className="pb-4">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
-              <CpuIcon className="size-5 text-primary" />
+              <CpuIcon className="size-5 text-primary" weight="duotone" />
             </div>
             <div>
               <CardTitle className="text-base">Device Information</CardTitle>
@@ -109,18 +129,18 @@ export default async function DeviceOverviewPage(props: {
               <span className="flex items-center gap-2 font-medium">
                 {device.is_online ? (
                   <>
-                    <WifiHighIcon className="size-4 text-green-500" />
+                    <WifiHighIcon className="size-4 text-green-500" weight="duotone" />
                     Online
                   </>
                 ) : (
                   <>
-                    <WifiSlashIcon className="size-4 text-muted-foreground" />
+                    <WifiSlashIcon className="size-4 text-muted-foreground" weight="duotone" />
                     Offline
                   </>
                 )}
               </span>
             </div>
-            
+
             <div className="flex flex-col gap-1">
               <span className="text-xs text-muted-foreground uppercase tracking-wide">Cameras</span>
               <span className="font-mono text-lg font-semibold">
@@ -131,7 +151,7 @@ export default async function DeviceOverviewPage(props: {
             <div className="flex flex-col gap-1">
               <span className="text-xs text-muted-foreground uppercase tracking-wide">Last Seen</span>
               <span className="flex items-center gap-1.5 font-medium text-sm">
-                <ClockIcon className="size-3.5 text-muted-foreground" />
+                <ClockIcon className="size-3.5 text-muted-foreground" weight="duotone" />
                 {device.last_seen_at ? new Date(device.last_seen_at).toLocaleString() : 'Never'}
               </span>
             </div>
@@ -146,49 +166,83 @@ export default async function DeviceOverviewPage(props: {
         </CardContent>
       </Card>
 
-      {/* Cameras Section */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
+      {/* Camera content: settings form when selected, otherwise camera list */}
+      {selectedCamera ? (
+        <>
+          <CameraSettingsForm
+            cameraId={selectedCamera.camera_id}
+            hardwareDeviceId={device.device_id}
+            hardwareCameraId={selectedCamera.camera_id}
+            initialSettings={cameraSettings}
+          />
+
+          <Card className="border-border/50 bg-muted/30">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <CpuIcon className="size-4" weight="duotone" />
+                    <span>Device: {device.name || device.device_id}</span>
+                  </div>
+                  <div className="h-4 w-px bg-border" />
+                  <Link
+                    href={`/infrastructure/${device.id}`}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Switch camera
+                  </Link>
+                </div>
+                {device.last_seen_at && (
+                  <span className="text-xs text-muted-foreground">
+                    Last seen: {new Date(device.last_seen_at).toLocaleString()}
+                  </span>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      ) : (
+        <div className="flex flex-col gap-4">
           <div>
             <h3 className="text-lg font-semibold">Cameras</h3>
             <p className="text-sm text-muted-foreground">
               {cameras.length} camera{cameras.length !== 1 ? 's' : ''} connected to this device
             </p>
           </div>
+
+          <Separator />
+
+          {cameras.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {cameras.map((camera) => (
+                <CameraCard
+                  key={camera.id}
+                  deviceId={device.id}
+                  camera={{
+                    id: camera.id,
+                    name: camera.name,
+                    camera_id: camera.camera_id,
+                    source_url: camera.source_url,
+                    is_online: camera.is_online
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            <Empty className="border-border/50">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <VideoCameraIcon weight="duotone" />
+                </EmptyMedia>
+                <EmptyTitle>No cameras configured</EmptyTitle>
+                <EmptyDescription>
+                  This device has no cameras registered. Configure cameras on the edge device to start streaming.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          )}
         </div>
-
-        <Separator />
-
-        {cameras.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {cameras.map((camera) => (
-              <CameraCard
-                key={camera.id}
-                deviceId={device.id}
-                camera={{
-                  id: camera.id,
-                  name: camera.name,
-                  camera_id: camera.camera_id,
-                  source_url: camera.source_url,
-                  is_online: camera.is_online
-                }}
-              />
-            ))}
-          </div>
-        ) : (
-          <Empty className="border-border/50">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <VideoCameraIcon />
-              </EmptyMedia>
-              <EmptyTitle>No cameras configured</EmptyTitle>
-              <EmptyDescription>
-                This device has no cameras registered. Configure cameras on the edge device to start streaming.
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        )}
-      </div>
+      )}
     </div>
   )
 }

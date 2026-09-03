@@ -147,7 +147,7 @@ export function CameraCard({ deviceId, camera }: CameraCardProps) {
             </p>
           </div>
           
-          <Button variant="outline" size="sm" render={<Link href={`/infrastructure/${deviceId}/settings?camera=${camera.id}`} />}>
+          <Button variant="outline" size="sm" render={<Link href={`/infrastructure/${deviceId}?camera=${camera.id}`} />}>
             <GearIcon className="size-4" />
             Configure
             <ArrowRightIcon className="size-3.5" />

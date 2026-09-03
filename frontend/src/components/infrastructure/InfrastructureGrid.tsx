@@ -111,7 +111,7 @@ export function InfrastructureGrid({ initialDevices }: { initialDevices: Device[
                         <Badge variant="outline" className={camera.is_online ? "text-green-500 bg-green-500/10" : "text-muted-foreground bg-muted/50"}>
                           {camera.is_online ? 'Active' : 'Offline'}
                         </Badge>
-                        <Link href={`/infrastructure/${device.id}/settings?camera=${camera.id}`} passHref>
+                        <Link href={`/infrastructure/${device.id}?camera=${camera.id}`} passHref>
                           <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
                             <GearIcon className="h-4 w-4" />
                             <span className="sr-only">Configure</span>
@@ -128,7 +128,7 @@ export function InfrastructureGrid({ initialDevices }: { initialDevices: Device[
             </div>
           </CardContent>
           <div className="p-4 pt-0 mt-auto">
-            <Link href={`/infrastructure/${device.id}/settings`} passHref>
+            <Link href={`/infrastructure/${device.id}`} passHref>
               <Button variant="outline" className="w-full gap-2">
                 <GearIcon className="h-4 w-4" />
                 Manage Cameras
