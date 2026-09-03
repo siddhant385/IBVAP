@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { ChevronLeft, Info, MapPin, AlertCircle, AlertTriangle, ShieldCheck, Clock, ShieldAlert } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { BBoxOverlay } from '@/components/alerts/BBoxOverlay'
+import { BBoxOverlay } from '../_components/BBoxOverlay'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 
@@ -39,7 +39,7 @@ export default async function AlertInvestigationPage({ params }: { params: Promi
 
   const { data: anprMatches } = await supabase
     .from('anpr_results')
-    .select(`*, watchlist_plates(description, threat_level)`)
+    .select(`*`)
     .eq('alert_id', resolvedParams.id)
 
   // 4. Fetch Evidence URL

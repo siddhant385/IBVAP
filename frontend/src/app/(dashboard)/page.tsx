@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
-import { RealtimeAlertFeed } from '@/components/alerts/RealtimeAlertFeed'
+import { RealtimeAlertFeed } from '@/app/(dashboard)/alerts/_components/RealtimeAlertFeed'
 import { RealtimeKpiRibbon } from '@/components/dashboard/RealtimeKpiRibbon'
 
 export default async function CommandCenterPage() {
