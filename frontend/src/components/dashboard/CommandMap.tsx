@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { createClient } from '@/utils/supabase/client'
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, GeoJSON } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -24,7 +24,15 @@ const defaultIcon = L.icon({
 
 export function CommandMap({ initialCameras }: { initialCameras: CameraMarker[] }) {
   const [cameras, setCameras] = useState<CameraMarker[]>(initialCameras)
+  const [geoJsonData, setGeoJsonData] = useState<GeoJSON.FeatureCollection | null>(null)
   const supabase = createClient()
+
+  useEffect(() => {
+    fetch('/india-composite.geojson')
+      .then((res) => res.json())
+      .then((data) => setGeoJsonData(data))
+      .catch((err) => console.error('Failed to load India GeoJSON boundary:', err))
+  }, [])
 
   useEffect(() => {
     const channel = supabase
@@ -83,6 +91,18 @@ export function CommandMap({ initialCameras }: { initialCameras: CameraMarker[] 
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+          {geoJsonData && (
+            <GeoJSON
+              data={geoJsonData}
+              style={{
+                color: '#3b82f6',
+                weight: 2,
+                opacity: 0.8,
+                fillColor: '#3b82f6',
+                fillOpacity: 0.05,
+              }}
+            />
+          )}
           {cameras.map((cam) => (
             cam.coordinates ? (
               <Marker key={cam.id} position={[cam.coordinates[0], cam.coordinates[1]]} icon={defaultIcon}>
