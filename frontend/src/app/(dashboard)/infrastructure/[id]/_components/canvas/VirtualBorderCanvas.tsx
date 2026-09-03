@@ -11,7 +11,9 @@ import {
   CheckIcon,
   CloudSlashIcon
 } from '@phosphor-icons/react/dist/ssr'
-import { DrawingCanvas, useSnapshot } from './DrawingCanvas'
+import { DrawingCanvas } from './DrawingCanvas'
+import { useSnapshot } from '../hooks/useSnapshot'
+import { useEffect } from 'react'
 
 export interface BorderPoint {
   x: number
@@ -56,11 +58,19 @@ export function VirtualBorderCanvas({
   const [isDrawing, setIsDrawing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
-  const { snapshotStatus, isRequestingSnapshot, requestSnapshot } = useSnapshot({
+  const { snapshotUrl, snapshotStatus, isRequestingSnapshot, requestSnapshot } = useSnapshot({
     hardwareDeviceId,
     hardwareCameraId,
     isOffline
   })
+
+  useEffect(() => {
+    if (isOffline) return
+    if (snapshotUrl) return
+    if (isRequestingSnapshot) return
+    requestSnapshot()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOffline, snapshotUrl, isRequestingSnapshot, hardwareDeviceId, hardwareCameraId])
 
   // Draw scene
   const drawScene = useCallback((
@@ -194,9 +204,9 @@ export function VirtualBorderCanvas({
   return (
     <div className="relative">
       <DrawingCanvas
-        hardwareDeviceId={hardwareDeviceId}
-        hardwareCameraId={hardwareCameraId}
         isOffline={isOffline}
+        snapshotUrl={snapshotUrl}
+        isRequestingSnapshot={isRequestingSnapshot}
         onDraw={drawScene}
         onCanvasClick={handleCanvasClick}
         overlays={overlays}

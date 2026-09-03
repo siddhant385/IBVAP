@@ -1,9 +1,8 @@
 'use client'
 
-import { ReactNode, useEffect } from 'react'
+import { ReactNode } from 'react'
 import { Spinner } from '@/components/ui/spinner'
 import { CloudSlashIcon } from '@phosphor-icons/react/dist/ssr'
-import { useSnapshot } from '../hooks/useSnapshot'
 import { useCanvasDrawing } from '../hooks/useCanvasDrawing'
 
 interface DrawingCanvasProps {
@@ -11,6 +10,9 @@ interface DrawingCanvasProps {
   hardwareCameraId?: string
   isOffline?: boolean
   emptyMessage?: string
+  /** Pre-fetched snapshot URL; if absent, snapshot UI still renders but nothing to draw on */
+  snapshotUrl: string | null
+  isRequestingSnapshot?: boolean
   /** Function called every time the canvas needs to draw */
   onDraw: (ctx: CanvasRenderingContext2D, width: number, height: number) => void
   /** Optional click handler for normalized canvas coordinates (0-1) */
@@ -21,32 +23,18 @@ interface DrawingCanvasProps {
 
 /**
  * Base canvas component for drawing on camera snapshots.
- * Handles snapshot fetching, image loading, and canvas sizing.
- * Parent provides the actual drawing logic via onDraw prop.
+ * Handles image loading and canvas sizing.
+ * Parent provides snapshot URL + actual drawing logic via props.
  */
 export function DrawingCanvas({
-  hardwareDeviceId,
-  hardwareCameraId,
   isOffline = false,
   emptyMessage = 'Fetch a snapshot to start drawing',
+  snapshotUrl,
+  isRequestingSnapshot = false,
   onDraw,
   onCanvasClick,
   overlays
 }: DrawingCanvasProps) {
-  const { snapshotUrl, isRequestingSnapshot, snapshotStatus, requestSnapshot } = useSnapshot({
-    hardwareDeviceId,
-    hardwareCameraId,
-    isOffline
-  })
-
-  useEffect(() => {
-    if (isOffline) return
-    if (snapshotUrl) return
-    if (isRequestingSnapshot) return
-    requestSnapshot()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOffline, snapshotUrl, isRequestingSnapshot, hardwareDeviceId, hardwareCameraId])
-
   const { canvasRef, containerRef, imageLoaded } = useCanvasDrawing({
     snapshotUrl,
     onDraw
@@ -73,12 +61,10 @@ export function DrawingCanvas({
       {overlays}
       
       {/* Default status overlay if no custom overlays */}
-      {!overlays && snapshotStatus && (
+      {!overlays && isRequestingSnapshot && (
         <div className="absolute top-4 right-4 z-10">
-          <span className={`text-xs px-2 py-1 rounded-full ${
-            isRequestingSnapshot ? 'bg-amber-500/90 text-white animate-pulse' : 'bg-black/70 text-white'
-          }`}>
-            {snapshotStatus}
+          <span className="text-xs px-2 py-1 rounded-full bg-amber-500/90 text-white animate-pulse">
+            Fetching snapshot...
           </span>
         </div>
       )}
@@ -115,4 +101,4 @@ export function DrawingCanvas({
   )
 }
 
-export { useSnapshot, useCanvasDrawing }
+export { useCanvasDrawing }

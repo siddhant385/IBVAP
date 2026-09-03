@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { useToastManager } from '@/components/ui/toast'
 import { createClient } from '@/utils/supabase/client'
@@ -11,7 +11,8 @@ import {
   CheckIcon,
   CloudSlashIcon
 } from '@phosphor-icons/react/dist/ssr'
-import { DrawingCanvas, useSnapshot } from './DrawingCanvas'
+import { DrawingCanvas } from './DrawingCanvas'
+import { useSnapshot } from '../hooks/useSnapshot'
 
 export interface Point {
   x: number
@@ -53,11 +54,19 @@ export function VirtualFenceCanvas({
   const [isDrawing, setIsDrawing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
-  const { snapshotStatus, isRequestingSnapshot, requestSnapshot } = useSnapshot({
+  const { snapshotUrl, snapshotStatus, isRequestingSnapshot, requestSnapshot } = useSnapshot({
     hardwareDeviceId,
     hardwareCameraId,
     isOffline
   })
+
+  useEffect(() => {
+    if (isOffline) return
+    if (snapshotUrl) return
+    if (isRequestingSnapshot) return
+    requestSnapshot()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOffline, snapshotUrl, isRequestingSnapshot, hardwareDeviceId, hardwareCameraId])
 
   // Draw scene - renders all polygons
   const drawScene = useCallback((
@@ -190,9 +199,9 @@ export function VirtualFenceCanvas({
   return (
     <div className="relative">
       <DrawingCanvas
-        hardwareDeviceId={hardwareDeviceId}
-        hardwareCameraId={hardwareCameraId}
         isOffline={isOffline}
+        snapshotUrl={snapshotUrl}
+        isRequestingSnapshot={isRequestingSnapshot}
         onDraw={drawScene}
         onCanvasClick={handleCanvasClick}
         overlays={overlays}
