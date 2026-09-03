@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Oxanium } from "next/font/google";
+import { Geist, Geist_Mono, Oxanium, IBM_Plex_Sans, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-const geistHeading = Geist({subsets:['latin'],variable:'--font-heading'});
+const sourceSans3Heading = Source_Sans_3({subsets:['latin'],variable:'--font-heading'});
 
-const oxanium = Oxanium({subsets:['latin'],variable:'--font-sans'});
+const ibmPlexSans = IBM_Plex_Sans({subsets:['latin'],variable:'--font-sans'});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,7 +32,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn("h-full dark", "antialiased", geistSans.variable, geistMono.variable, "font-sans", oxanium.variable, geistHeading.variable)}
+      className={cn("h-full dark", "antialiased", geistSans.variable, geistMono.variable, "font-sans", ibmPlexSans.variable, sourceSans3Heading.variable)}
     >
       <body className="min-h-full flex flex-col">
         <TooltipProvider>

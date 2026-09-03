@@ -29,9 +29,7 @@ export function CommandMap({ initialCameras }: { initialCameras: CameraMarker[] 
   const { resolvedTheme } = useTheme()
   const supabase = createClient()
 
-  const tileUrl = resolvedTheme === 'dark'
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+  const tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 
   useEffect(() => {
     fetch('/india-composite.geojson')
@@ -95,7 +93,8 @@ export function CommandMap({ initialCameras }: { initialCameras: CameraMarker[] 
         <MapContainer center={center} zoom={13} className="h-full w-full min-h-[350px]">
           <TileLayer
             key={resolvedTheme}
-            attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            className={resolvedTheme === 'dark' ? 'invert brightness-90 contrast-125 hue-rotate-180' : ''}
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url={tileUrl}
           />
           {geoJsonData && (
