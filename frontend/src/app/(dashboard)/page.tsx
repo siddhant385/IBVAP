@@ -107,10 +107,9 @@ export default async function CommandCenterPage() {
     return null
   }
 
-  const parsedCameraMarkers = (cameraMarkers || []).map((cam) => ({
-    ...cam,
-    coordinates: parseCoord(cam.coordinates)
-  }))
+  const parsedCameraMarkers = (cameraMarkers || [])
+    .map((cam) => ({ ...cam, coordinates: parseCoord(cam.coordinates) }))
+    .filter((c): c is typeof c & { coordinates: [number, number] } => c.coordinates !== null)
 
   return (
     <div className="space-y-6">
