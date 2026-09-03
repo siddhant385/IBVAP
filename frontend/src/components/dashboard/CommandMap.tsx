@@ -33,10 +33,11 @@ function IndiaCorrectedTileLayer() {
   useEffect(() => {
     if (!map) return
 
-    // Create the corrected tile layer
+    // Create the corrected tile layer with explicit layerConfig
     const correctedLayer = L.tileLayer.indiaBoundaryCorrected(
       'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       {
+        layerConfig: 'osm',
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
       }
     )
