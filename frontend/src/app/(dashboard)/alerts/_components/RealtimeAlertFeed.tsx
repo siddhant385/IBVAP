@@ -8,7 +8,7 @@ import { Database } from '@/types/database.types'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 type Alert = Database['public']['Tables']['alerts']['Row'] & {
   devices: { name: string | null; location: string | null } | null
@@ -18,6 +18,7 @@ export function RealtimeAlertFeed() {
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [supabase] = useState(() => createClient())
   const chimeRef = useRef<HTMLAudioElement | null>(null)
+  const router = useRouter()
 
   useEffect(() => {
     chimeRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3')
@@ -74,7 +75,8 @@ export function RealtimeAlertFeed() {
     }
   }, [supabase])
 
-  const handleTriage = useCallback(async (alertId: string, status: 'resolved' | 'false_positive') => {
+  const handleTriage = useCallback(async (e: React.MouseEvent, alertId: string, status: 'resolved' | 'false_positive') => {
+    e.stopPropagation() // Prevent row click from navigating when pressing triage buttons
     setAlerts(current => 
       current.map(a => a.id === alertId ? { ...a, status } : a)
     )
@@ -146,7 +148,8 @@ export function RealtimeAlertFeed() {
               actionRequiredAlerts.map((alert) => (
                 <div 
                   key={alert.id} 
-                  className={`flex flex-col gap-3 p-4 hover:bg-muted/20 transition-colors ${
+                  onClick={() => router.push(`/alerts/${alert.id}`)}
+                  className={`flex flex-col gap-3 p-4 hover:bg-muted/20 cursor-pointer transition-colors ${
                     alert.severity === 'critical' ? 'bg-destructive/5' : ''
                   }`}
                 >
@@ -177,15 +180,20 @@ export function RealtimeAlertFeed() {
                     </div>
                   </div>
                   <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/20">
-                    <Link href={`/alerts/${alert.id}`}>
-                      <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs">
-                        <ExternalLink className="size-3.5" /> Details
-                      </Button>
-                    </Link>
-                    <Button variant="outline" size="sm" className="h-8 gap-1 text-xs text-muted-foreground" onClick={() => handleTriage(alert.id, 'false_positive')}>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-8 gap-1 text-xs text-muted-foreground" 
+                      onClick={(e) => handleTriage(e, alert.id, 'false_positive')}
+                    >
                       <EyeOff className="size-3.5" /> False Alarm
                     </Button>
-                    <Button variant="default" size="sm" className="h-8 gap-1 text-xs" onClick={() => handleTriage(alert.id, 'resolved')}>
+                    <Button 
+                      variant="default" 
+                      size="sm" 
+                      className="h-8 gap-1 text-xs" 
+                      onClick={(e) => handleTriage(e, alert.id, 'resolved')}
+                    >
                       <CheckCircle2 className="size-3.5" /> Resolve
                     </Button>
                   </div>
@@ -203,7 +211,8 @@ export function RealtimeAlertFeed() {
               alerts.map((alert) => (
                 <div 
                   key={alert.id} 
-                  className="flex items-center justify-between p-4 hover:bg-muted/20 transition-colors"
+                  onClick={() => router.push(`/alerts/${alert.id}`)}
+                  className="flex items-center justify-between p-4 hover:bg-muted/20 cursor-pointer transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <div className="rounded-full bg-muted p-2">
@@ -223,9 +232,6 @@ export function RealtimeAlertFeed() {
                     <span className="text-xs text-muted-foreground font-mono">
                       {new Date(alert.timestamp).toLocaleTimeString()}
                     </span>
-                    <Link href={`/alerts/${alert.id}`}>
-                      <Button variant="ghost" size="sm" className="h-8">View</Button>
-                    </Link>
                   </div>
                 </div>
               ))
