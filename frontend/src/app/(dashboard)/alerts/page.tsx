@@ -4,7 +4,8 @@ import { AlertsKpiRibbon } from './_components/AlertsKpiRibbon'
 import { RealtimeAlertFeed } from './_components/RealtimeAlertFeed'
 import { AlertsFilterBar } from './_components/AlertsFilterBar'
 import { AlertsTable } from './_components/AlertsTable'
-import { Activity, ShieldAlert, Table as TableIcon } from 'lucide-react'
+import { NodeAlertsDistributionTable } from './_components/NodeAlertsDistributionTable'
+import { Activity, ShieldAlert, Table as TableIcon, Cpu } from 'lucide-react'
 
 export default async function AlertsPage({
   searchParams,
@@ -102,6 +103,9 @@ export default async function AlertsPage({
           <TabsTrigger value="live-feed" className="gap-2">
             <ShieldAlert className="size-4" /> Live Stream & Triage
           </TabsTrigger>
+          <TabsTrigger value="node-distribution" className="gap-2">
+            <Cpu className="size-4" /> Edge Node Distribution
+          </TabsTrigger>
           <TabsTrigger value="historical" className="gap-2">
             <TableIcon className="size-4" /> Historical Log Search
           </TabsTrigger>
@@ -109,6 +113,10 @@ export default async function AlertsPage({
 
         <TabsContent value="live-feed" className="space-y-4 mt-0">
           <RealtimeAlertFeed />
+        </TabsContent>
+
+        <TabsContent value="node-distribution" className="space-y-4 mt-0">
+          <NodeAlertsDistributionTable />
         </TabsContent>
 
         <TabsContent value="historical" className="space-y-4 mt-0">

@@ -10,6 +10,7 @@ import { AlertSidebarContext } from '../_components/AlertSidebarContext'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ObjectDetectionsGrid } from '../_components/ObjectDetectionsGrid'
 import { AlertPaginationNav } from '../_components/AlertPaginationNav'
+import { AiThreatSynthesisBanner } from '../_components/AiThreatSynthesisBanner'
 
 export default async function AlertInvestigationPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient()
@@ -165,7 +166,14 @@ export default async function AlertInvestigationPage({ params }: { params: Promi
             </TabsContent>
             
             <TabsContent value="ai-insights" className="mt-0">
-              <Card className="rounded-t-none border-t-0 p-6 space-y-8 min-h-[480px]">
+              <Card className="rounded-t-none border-t-0 p-6 space-y-6 min-h-[480px]">
+                {/* AI Automated Threat Assessment Banner */}
+                <AiThreatSynthesisBanner
+                  faceMatches={faceMatchesWithUrls}
+                  anprMatches={anprMatchesWithUrls}
+                  severity={alert.severity || 'info'}
+                />
+
                 {/* Watchlist Matches */}
                 {(faceMatchesWithUrls.length > 0 || anprMatchesWithUrls.length > 0) && (
                   <div className="space-y-4">
@@ -175,20 +183,38 @@ export default async function AlertInvestigationPage({ params }: { params: Promi
                     <div className="grid gap-4 md:grid-cols-2">
                       {faceMatchesWithUrls.map((face) => (
                         <Card key={face.id} className="border-destructive/30 bg-destructive/5 overflow-hidden">
-                          <div className="flex h-24">
-                            <div className="w-24 bg-black flex items-center justify-center border-r border-destructive/20 overflow-hidden shrink-0">
+                          <div className="flex h-28">
+                            {/* Live Captured Crop */}
+                            <div className="w-24 bg-black flex flex-col items-center justify-center border-r border-destructive/20 overflow-hidden shrink-0 relative">
                               {face.cropUrl ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img src={face.cropUrl} alt="Face Crop" className="size-full object-cover" />
                               ) : (
                                 <span className="text-[10px] text-muted-foreground">Crop</span>
                               )}
+                              <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[9px] text-center text-white py-0.5 font-mono">Captured</span>
                             </div>
-                            <div className="p-3 flex-1 flex flex-col justify-center">
-                              <div className="font-bold text-sm">{face.known_faces?.name || 'Unknown Suspect'}</div>
-                              <div className="text-xs text-muted-foreground flex justify-between mt-1">
+
+                            {/* Reference Watchlist Image */}
+                            <div className="w-24 bg-black flex flex-col items-center justify-center border-r border-destructive/20 overflow-hidden shrink-0 relative">
+                              {face.refUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={face.refUrl} alt="Watchlist Reference" className="size-full object-cover" />
+                              ) : (
+                                <span className="text-[10px] text-muted-foreground">Reference</span>
+                              )}
+                              <span className="absolute bottom-0 inset-x-0 bg-destructive/80 text-[9px] text-center text-white py-0.5 font-mono">Watchlist</span>
+                            </div>
+
+                            <div className="p-3 flex-1 flex flex-col justify-center space-y-1">
+                              <div className="font-bold text-sm leading-none">{face.known_faces?.name || 'Unknown Suspect'}</div>
+                              <div className="text-xs text-muted-foreground flex justify-between pt-1">
+                                <span>Threat Level:</span>
+                                <span className="font-semibold text-destructive uppercase text-[10px]">{face.known_faces?.threat_level || 'HIGH'}</span>
+                              </div>
+                              <div className="text-xs text-muted-foreground flex justify-between">
                                 <span>Similarity Score:</span>
-                                <span className="font-semibold text-foreground">{((face.similarity_score || 0) * 100).toFixed(1)}%</span>
+                                <span className="font-semibold text-foreground font-mono">{((face.similarity_score || 0) * 100).toFixed(1)}%</span>
                               </div>
                             </div>
                           </div>
