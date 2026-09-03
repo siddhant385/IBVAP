@@ -1,19 +1,6 @@
-import dynamic from 'next/dynamic'
-import { Card } from '@/components/ui/card'
 import type { CameraNode, DetectionPing, FlaggedEntity, Zone } from '@/components/intelligence/GodsEyeClient'
+import { GodsEyeLoader } from '@/components/intelligence/GodsEyeLoader'
 import { createClient } from '@/utils/supabase/server'
-
-const GodsEyeClient = dynamic(
-  () => import('@/components/intelligence/GodsEyeClient').then((m) => m.GodsEyeClient),
-  {
-    ssr: false,
-    loading: () => (
-      <Card className="h-[calc(100vh-180px)] flex items-center justify-center text-muted-foreground text-sm animate-pulse">
-        Initializing God&apos;s Eye...
-      </Card>
-    ),
-  }
-)
 
 const parsePoint = (val: unknown): [number, number] | null => {
   if (!val) return null
@@ -102,11 +89,11 @@ export default async function GodsEyePage() {
         <h2 className="text-2xl font-bold tracking-tight">God&apos;s Eye View</h2>
         <p className="text-muted-foreground">Live tactical situational awareness across all nodes.</p>
       </div>
-      <GodsEyeClient
-        initialCameras={cameras}
-        initialDetections={detections}
-        initialFlagged={flagged}
-        initialZones={z}
+      <GodsEyeLoader
+        cameras={cameras}
+        detections={detections}
+        flagged={flagged}
+        zones={z}
       />
     </div>
   )
