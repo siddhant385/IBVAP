@@ -26,19 +26,13 @@ export function parsePointToLatLng(value: unknown): [number, number] | null {
     lat = Number((value as { y: number }).y)
   } else if (typeof value === 'string') {
     const trimmed = value.trim()
+    // Postgres point text: "(lng, lat)" or "lng, lat"
     const paren = trimmed.match(/^\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)?$/)
     if (paren) {
       lng = Number(paren[1])
       lat = Number(paren[2])
-    } else {
-      try {
-        const parsed = JSON.parse(trimmed)
-        if (Array.isArray(parsed) && parsed.length === 2) {
-          lng = Number(parsed[0])
-          lat = Number(parsed[1])
-        }
-      } catch { /* ignore */ }
     }
+    // No JSON.parse fallback — point strings are not valid JSON.
   }
 
   if (lng === null || lat === null || isNaN(lng) || isNaN(lat)) return null

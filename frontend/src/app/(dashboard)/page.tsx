@@ -155,22 +155,22 @@ export default async function CommandCenterPage() {
 
   const totalWatchlistMatches = (faceMatches || 0) + (plateMatches || 0)
 
-  // Initial watchlist feed items
+  // Initial watchlist feed items — use ISO strings to avoid hydration mismatch
   const initialMatches = [
     ...(recentFaceResults || []).map((f) => ({
       id: f.id,
       type: 'face' as const,
       title: 'Identity Match Detected',
       subtitle: `Similarity: ${((f.similarity_score || 0) * 100).toFixed(1)}%`,
-      timestamp: new Date(f.created_at).toLocaleTimeString()
+      timestamp: f.created_at,
     })),
     ...(recentAnprResults || []).map((a) => ({
       id: a.id,
       type: 'anpr' as const,
       title: `Flagged Plate: ${a.plate_text || 'UNKNOWN'}`,
       subtitle: `Confidence: ${((a.plate_confidence || 0) * 100).toFixed(1)}%`,
-      timestamp: new Date(a.created_at).toLocaleTimeString()
-    }))
+      timestamp: a.created_at,
+    })),
   ].slice(0, 5)
 
   const parsedCameraMarkers = (cameraMarkers || [])

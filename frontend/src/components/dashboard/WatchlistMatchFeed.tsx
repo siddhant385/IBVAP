@@ -11,6 +11,7 @@ interface MatchItem {
   type: 'face' | 'anpr'
   title: string
   subtitle: string
+  /** ISO timestamp string — formatted on the client to avoid hydration mismatch */
   timestamp: string
   confidence?: number
 }
@@ -31,7 +32,7 @@ export function WatchlistMatchFeed({ initialMatches }: { initialMatches: MatchIt
               type: 'face',
               title: 'Identity Match Detected',
               subtitle: `Similarity: ${(newFace.similarity_score * 100).toFixed(1)}%`,
-              timestamp: new Date().toLocaleTimeString(),
+              timestamp: new Date().toISOString(),
               confidence: newFace.similarity_score
             },
             ...prev.slice(0, 4)
@@ -51,7 +52,7 @@ export function WatchlistMatchFeed({ initialMatches }: { initialMatches: MatchIt
               type: 'anpr',
               title: `Flagged Plate: ${newAnpr.plate_text}`,
               subtitle: `Confidence: ${(newAnpr.plate_confidence * 100).toFixed(1)}%`,
-              timestamp: new Date().toLocaleTimeString(),
+              timestamp: new Date().toISOString(),
               confidence: newAnpr.plate_confidence
             },
             ...prev.slice(0, 4)
@@ -90,7 +91,9 @@ export function WatchlistMatchFeed({ initialMatches }: { initialMatches: MatchIt
                 <p className="font-semibold truncate">{item.title}</p>
                 <p className="text-muted-foreground">{item.subtitle}</p>
               </div>
-              <span className="text-[10px] text-muted-foreground whitespace-nowrap">{item.timestamp}</span>
+              <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                {new Date(item.timestamp).toLocaleTimeString()}
+              </span>
             </div>
           ))
         )}

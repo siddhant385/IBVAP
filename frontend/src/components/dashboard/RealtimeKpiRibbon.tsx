@@ -31,7 +31,7 @@ export function RealtimeKpiRibbon({
 
   useEffect(() => {
     // We subscribe to all relevant tables to keep KPIs in sync
-    
+
     // 1. Devices subscription
     const devicesChannel = supabase.channel('kpi:devices')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'devices' }, async () => {
@@ -48,7 +48,7 @@ export function RealtimeKpiRibbon({
       .on('postgres_changes', { event: '*', schema: 'public', table: 'alerts' }, async () => {
         const todayStart = new Date(new Date().setHours(0,0,0,0)).toISOString()
         const { count: alertsToday } = await supabase.from('alerts').select('*', { count: 'exact', head: true }).gte('timestamp', todayStart)
-        
+
         // Active threats = unacknowledged or investigating criticals/warnings
         const { count: threats } = await supabase.from('alerts')
           .select('*', { count: 'exact', head: true })
@@ -68,16 +68,17 @@ export function RealtimeKpiRibbon({
       })
       .subscribe()
 
-    // 4. Matches (Face / ANPR)
-    // Supabase allows subscribing to multiple tables per channel if done right, but separate channels is safer here.
-    const matchesChannel = supabase.channel('kpi:matches')
+    // 4. Matches (Face / ANPR) - separate channel for face + plate
+    const faceMatchChannel = supabase.channel('kpi:face-matches')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'face_results' }, () => {
-        // Increment naively or refetch if we need exact "today"
         setWatchlistMatches(prev => prev + 1)
       })
+      .subscribe()
+
+    const anprMatchChannel = supabase.channel('kpi:anpr-matches')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'anpr_results' }, (payload) => {
         if (payload.new.is_flagged) {
-           setWatchlistMatches(prev => prev + 1)
+          setWatchlistMatches(prev => prev + 1)
         }
       })
       .subscribe()
@@ -86,7 +87,8 @@ export function RealtimeKpiRibbon({
       supabase.removeChannel(devicesChannel)
       supabase.removeChannel(alertsChannel)
       supabase.removeChannel(camerasChannel)
-      supabase.removeChannel(matchesChannel)
+      supabase.removeChannel(faceMatchChannel)
+      supabase.removeChannel(anprMatchChannel)
     }
   }, [supabase])
 
