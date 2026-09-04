@@ -145,7 +145,7 @@ export function DetectionAlertTrendChart({ initialData, initialWindow = '24h' }:
             <Tooltip
               contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '12px' }}
               labelStyle={{ color: '#94a3b8', fontWeight: 600 }}
-              formatter={(value: number, name: string) => [value.toLocaleString(), name]}
+              formatter={(value, name) => [Number(value ?? 0).toLocaleString(), String(name)]}
             />
             <Legend wrapperStyle={{ fontSize: '11px' }} iconType="circle" />
             <Area type="monotone" dataKey="detections" stroke="#3b82f6" fillOpacity={1} fill="url(#colorDetections)" name="Detections" strokeWidth={2} />
