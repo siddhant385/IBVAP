@@ -10,6 +10,7 @@ import { Activity, MapPin } from 'lucide-react'
 import { useGodsEyeStore } from './store'
 import { useFilteredDetections } from './useFilteredDetections'
 import { cameraIcon, detectionIcon, zoneColorsFor, parseZone } from './icons'
+import type { CameraNode, Zone } from './lib'
 
 function FitBounds({ points }: { points: [number, number][] }) {
   const map = useMap()
