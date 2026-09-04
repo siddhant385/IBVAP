@@ -6,6 +6,7 @@ import { DynamicCommandMap } from '@/components/dashboard/DynamicCommandMap'
 import { DetectionAlertTrendChart, type HourlyTrendData } from '@/components/dashboard/DetectionAlertTrendChart'
 import { WatchlistMatchFeed } from '@/components/dashboard/WatchlistMatchFeed'
 import { AnalyticsPanel, type AnalyticsData, type CameraActivity, type ThreatBucket } from '@/components/dashboard/AnalyticsPanel'
+import { parsePointToLatLng } from '@/lib/coords'
 
 const WINDOW_HOURS = 24
 const BUCKET_COUNT = 24
@@ -172,25 +173,8 @@ export default async function CommandCenterPage() {
     }))
   ].slice(0, 5)
 
-  const parseCoord = (val: unknown): [number, number] | null => {
-    if (!val) return null
-    if (Array.isArray(val) && val.length === 2) {
-      const a = Number(val[0]); const b = Number(val[1])
-      return isNaN(a) || isNaN(b) ? null : [a, b]
-    }
-    if (typeof val === 'string') {
-      const m = val.trim().match(/^\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)?$/)
-      if (m) return [Number(m[1]), Number(m[2])]
-      try {
-        const p = JSON.parse(val)
-        if (Array.isArray(p) && p.length === 2) return [Number(p[0]), Number(p[1])]
-      } catch { /* ignore */ }
-    }
-    return null
-  }
-
   const parsedCameraMarkers = (cameraMarkers || [])
-    .map((cam) => ({ ...cam, coordinates: parseCoord(cam.coordinates) }))
+    .map((cam) => ({ ...cam, coordinates: parsePointToLatLng(cam.coordinates) }))
     .filter((c): c is typeof c & { coordinates: [number, number] } => c.coordinates !== null)
 
   return (

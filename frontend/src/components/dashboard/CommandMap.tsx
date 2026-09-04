@@ -7,25 +7,17 @@ import { MapContainer, TileLayer, Marker, Popup, GeoJSON } from 'react-leaflet'
 import { useTheme } from 'next-themes'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { parsePointToLatLng } from '@/lib/coords'
 
 interface CameraMarker {
   id: string
   name: string | null
   location: string | null
   is_online: boolean
-  coordinates: [number, number]
+  coordinates: [number, number] | null
 }
 
-const parseCoordsAny = (val: unknown): [number, number] => {
-  if (Array.isArray(val) && val.length === 2) {
-    return [Number(val[0]), Number(val[1])]
-  }
-  if (typeof val === 'string') {
-    const m = val.trim().match(/^\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)?$/)
-    if (m) return [Number(m[1]), Number(m[2])]
-  }
-  return [0, 0]
-}
+const parseCoordsAny = (val: unknown): [number, number] | null => parsePointToLatLng(val)
 
 const defaultIcon = L.icon({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -62,22 +54,25 @@ export function CommandMap({ initialCameras }: { initialCameras: CameraMarker[] 
             coordinates?: [number, number] | string
           }
           if (updated.coordinates) {
-            setCameras((prev) => {
-              const idx = prev.findIndex((c) => c.id === updated.id)
-              const item: CameraMarker = {
-                id: updated.id,
-                name: updated.name ?? null,
-                location: updated.location ?? null,
-                is_online: Boolean(updated.is_online),
-                coordinates: parseCoordsAny(updated.coordinates)
-              }
-              if (idx >= 0) {
-                const copy = [...prev]
-                copy[idx] = item
-                return copy
-              }
-              return [...prev, item]
-            })
+            const coords = parseCoordsAny(updated.coordinates)
+            if (coords) {
+              setCameras((prev) => {
+                const idx = prev.findIndex((c) => c.id === updated.id)
+                const item: CameraMarker = {
+                  id: updated.id,
+                  name: updated.name ?? null,
+                  location: updated.location ?? null,
+                  is_online: Boolean(updated.is_online),
+                  coordinates: coords,
+                }
+                if (idx >= 0) {
+                  const copy = [...prev]
+                  copy[idx] = item
+                  return copy
+                }
+                return [...prev, item]
+              })
+            }
           }
         }
       })

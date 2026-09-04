@@ -1,29 +1,7 @@
 import type { CameraNode, DetectionPing, FlaggedEntity, Zone } from '@/components/intelligence/godseye/lib'
 import { GodsEyeLoader } from '@/components/intelligence/GodsEyeLoader'
 import { createClient } from '@/utils/supabase/server'
-
-const parsePoint = (val: unknown): [number, number] | null => {
-  if (!val) return null
-  if (Array.isArray(val) && val.length === 2) {
-    const a = Number(val[0])
-    const b = Number(val[1])
-    if (!isNaN(a) && !isNaN(b)) return [a, b]
-    return null
-  }
-  if (typeof val === 'string') {
-    const trimmed = val.trim()
-    const paren = trimmed.match(/^\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)?$/)
-    if (paren) return [Number(paren[1]), Number(paren[2])]
-    try {
-      const p = JSON.parse(trimmed)
-      if (Array.isArray(p) && p.length === 2) return [Number(p[0]), Number(p[1])]
-    } catch { /* ignore */ }
-  }
-  if (typeof val === 'object' && val !== null && 'x' in val && 'y' in val) {
-    return [Number((val as { x: number }).x), Number((val as { y: number }).y)]
-  }
-  return null
-}
+import { parsePointToLatLng } from '@/lib/coords'
 
 export default async function GodsEyePage() {
   const supabase = await createClient()
@@ -74,11 +52,11 @@ export default async function GodsEyePage() {
     name: c.name,
     location: c.location,
     is_online: Boolean(c.is_online),
-    coordinates: parsePoint(c.coordinates),
+    coordinates: parsePointToLatLng(c.coordinates),
   }))
 
   const detections: DetectionPing[] = (dets ?? []).flatMap((d) => {
-    const coords = parsePoint(d.camera_coords) ?? parsePoint((cams ?? []).find((c) => c.id === d.camera_id)?.coordinates)
+    const coords = parsePointToLatLng(d.camera_coords) ?? parsePointToLatLng((cams ?? []).find((c) => c.id === d.camera_id)?.coordinates)
     if (!coords) return []
     return [{
       id: d.id,
