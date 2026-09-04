@@ -21,9 +21,19 @@ function FitBounds({ points }: { points: [number, number][] }) {
   return null
 }
 
-export function GodsEyeMap() {
-  const cameras = useGodsEyeStore((s) => s.cameras)
-  const zones = useGodsEyeStore((s) => s.zones)
+interface GodsEyeMapProps {
+  initialCameras?: CameraNode[]
+  initialZones?: Zone[]
+}
+
+export function GodsEyeMap({ initialCameras = [], initialZones = [] }: GodsEyeMapProps) {
+  const storeCameras = useGodsEyeStore((s) => s.cameras)
+  const storeZones = useGodsEyeStore((s) => s.zones)
+  // Use store data if hydrated, otherwise fall back to initial props.
+  // This prevents the map from briefly centering on the default fallback
+  // before useGodsEyeInit's effect populates the store.
+  const cameras = storeCameras.length > 0 ? storeCameras : initialCameras
+  const zones = storeZones.length > 0 ? storeZones : initialZones
   const visible = useFilteredDetections()
   const setSelectedCameraId = useGodsEyeStore((s) => s.setSelectedCameraId)
   const setSelectedDetection = useGodsEyeStore((s) => s.setSelectedDetection)

@@ -28,7 +28,10 @@ export function GodsEyeClient(props: Props) {
           <GodsEyeHeader />
         </CardHeader>
         <CardContent className="flex-1 p-0 relative">
-          <GodsEyeMap />
+          <GodsEyeMap
+            initialCameras={props.cameras}
+            initialZones={props.zones}
+          />
           <GodsEyeLegend />
           <GodsEyeEvidencePanel />
         </CardContent>

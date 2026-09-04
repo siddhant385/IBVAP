@@ -42,7 +42,7 @@ export function RealtimeAlertFeed() {
     fetchInitial()
 
     const channel = supabase
-      .channel('public:alerts')
+      .channel(`public:alerts:${Date.now()}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'alerts' },
@@ -69,7 +69,7 @@ export function RealtimeAlertFeed() {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'alerts' },
         (payload) => {
-          setAlerts((current) => 
+          setAlerts((current) =>
             current.map(a => a.id === payload.new.id ? { ...a, ...payload.new } : a)
           )
         }

@@ -85,10 +85,18 @@ export const evidenceUrl = (path: string | null | undefined): string | null => {
 
 export const parseCoords = parsePointToLatLng
 
+/**
+ * Parse a WKT POLYGON string into Leaflet [lat, lng] pairs.
+ * WKT format: POLYGON((lng lat, lng lat, ...)) — x=longitude, y=latitude.
+ * Leaflet expects [latitude, longitude], so we flip each pair.
+ */
 export function parsePolygonWKT(wkt: string | null): [number, number][] | null {
   if (!wkt) return null
   const m = wkt.match(/POLYGON\s*\(\((.*)\)\)/i)
   if (!m) return null
-  const pairs = m[1].split(',').map((p) => p.trim().split(/\s+/).map(Number))
-  return pairs.filter((p) => p.length === 2 && !isNaN(p[0]) && !isNaN(p[1])) as [number, number][]
+  const raw = m[1].split(',').map((p) => p.trim().split(/\s+/).map(Number))
+  const pairs = raw
+    .filter((p) => p.length === 2 && !isNaN(p[0]) && !isNaN(p[1])) as [number, number][]
+  // Flip: WKT is (lng, lat) → return (lat, lng) for Leaflet
+  return pairs.map(([lng, lat]) => [lat, lng])
 }
