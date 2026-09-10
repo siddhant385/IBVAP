@@ -262,7 +262,12 @@ export default async function AlertInvestigationPage({ params }: { params: Promi
                       </div>
                       <div className="space-y-1 pt-2">
                         <div className="text-xs font-semibold text-foreground">2. Cloud Ingested</div>
-                        <div className="text-[11px] text-muted-foreground">Ingestion Latency: {(latencyMs / 1000).toFixed(2)}s</div>
+                        <div className="text-[11px] text-muted-foreground flex items-center gap-2">
+                          <span>Ingestion Latency:</span>
+                          <Badge variant="outline" className={`font-mono text-[10px] ${latencyMs > 3000 ? 'border-destructive text-destructive' : 'border-green-500 text-green-500'}`}>
+                            {(latencyMs / 1000).toFixed(2)}s
+                          </Badge>
+                        </div>
                         <div className="text-[10px] font-mono text-muted-foreground">{alert.received_at ? new Date(alert.received_at).toISOString() : 'N/A'}</div>
                       </div>
                     </div>
