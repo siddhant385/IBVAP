@@ -10,8 +10,10 @@ class Settings(BaseSettings):
     FACE_MATCH_THRESHOLD: float = 0.65
     YOLO_PLATE_MODEL: str = "models/best.pt"
     FAST_PLATE_OCR_MODEL: str = "cct-s-v2-global-model"
+    USE_GPU: bool = False
     
     class Config:
         env_file = ".env"
+        extra = "ignore"
 
 settings = Settings()
