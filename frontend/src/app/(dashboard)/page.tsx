@@ -211,13 +211,8 @@ export default async function CommandCenterPage() {
 
       <AnalyticsPanel initial={analytics} windowHours={WINDOW_HOURS} />
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        <div className="col-span-4 min-h-[300px]">
-          <WatchlistMatchFeed initialMatches={initialMatches} />
-        </div>
-        <div className="col-span-3 min-h-[300px]">
-          <RealtimeAlertFeed />
-        </div>
+      <div className="min-h-[300px]">
+        <WatchlistMatchFeed initialMatches={initialMatches} />
       </div>
     </div>
   )
