@@ -106,9 +106,24 @@ export function DetectionAlertTrendChart({ initialData, initialWindow = '24h' }:
         <div className="flex items-start justify-between gap-2">
           <div>
             <CardTitle className="text-base font-semibold">Threat & Detection Velocity</CardTitle>
-            <CardDescription>
-              {totalDetections.toLocaleString()} detections · {totalAlerts.toLocaleString()} alerts
-              {peakBucket && ` · peak ${peakBucket.label}`}
+            <CardDescription className="flex items-center gap-2 mt-1 text-xs">
+              <span className="inline-flex items-center gap-1 font-medium text-foreground">
+                <span className="size-2 rounded-full bg-blue-500 inline-block" />
+                {totalDetections.toLocaleString()} detections
+              </span>
+              <span>·</span>
+              <span className="inline-flex items-center gap-1 font-medium text-foreground">
+                <span className="size-2 rounded-full bg-destructive inline-block" />
+                {totalAlerts.toLocaleString()} alerts
+              </span>
+              {peakBucket && (totalDetections + totalAlerts > 0) && (
+                <>
+                  <span>·</span>
+                  <span className="text-muted-foreground">
+                    Peak activity at <strong className="text-foreground font-semibold">{peakBucket.label}</strong>
+                  </span>
+                </>
+              )}
             </CardDescription>
           </div>
           <div className="flex items-center gap-1">
