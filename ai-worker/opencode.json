@@ -1,0 +1,15 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "fast-plate-ocr-docs": {
+      "type": "remote",
+      "url": "https://gitmcp.io/ankandrew/fast-plate-ocr",
+      "enabled": true
+    },
+    "ultralytics-docs": {
+      "type": "remote",
+      "url": "https://gitmcp.io/ultralytics/ultralytics",
+      "enabled": true
+    }
+  }
+}

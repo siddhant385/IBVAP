@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = "<3.13,>=3.12"
 dependencies = [
+    "fast-plate-ocr>=1.1.0",
     "gotrue>=2.12.4",
     "insightface>=1.0.1",
     "numpy>=2.5.2",
@@ -18,6 +19,7 @@ dependencies = [
     "realtime>=2.31.0",
     "storage3>=2.31.0",
     "supabase>=2.31.0",
+    "ultralytics>=8.4.146",
 ]
 
 [dependency-groups]

@@ -11,9 +11,12 @@ from src.core.database import get_supabase_client
 
 class FaceRecognitionPlugin(BasePlugin):
     def __init__(self):
-        # Initialize InsightFace buffalo_l pack securely for low RAM CPU usage
+        use_gpu = os.getenv("USE_GPU", "false").lower() == "true"
+        ctx_id = 0 if use_gpu else -1
+        
+        # Initialize InsightFace buffalo_l pack securely
         self.app = FaceAnalysis(name="buffalo_l", allowed_modules=['detection', 'recognition'])
-        self.app.prepare(ctx_id=-1, det_size=(640, 640))
+        self.app.prepare(ctx_id=ctx_id, det_size=(640, 640))
         self.match_threshold = float(os.getenv("FACE_MATCH_THRESHOLD", 0.65))
 
     @property
