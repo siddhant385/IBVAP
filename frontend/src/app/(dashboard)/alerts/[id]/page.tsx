@@ -71,29 +71,28 @@ export default async function AlertInvestigationPage({ params }: { params: Promi
   }
 
   // 5. Fetch Face & Plate Crops Signed URLs
+  const getSignedUrl = async (bucket: string, path: string) => {
+    const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 3600)
+    if (data?.signedUrl) return data.signedUrl
+    // Fallback try evidence bucket if ai-crops isn't found
+    if (bucket !== 'evidence') {
+      const { data: fallbackData } = await supabase.storage.from('evidence').createSignedUrl(path, 3600)
+      return fallbackData?.signedUrl || null
+    }
+    return null
+  }
+
   const faceMatchesWithUrls = await Promise.all(
     (faceMatches || []).map(async (face) => {
-      let cropUrl = null
-      let refUrl = null
-      if (face.face_crop_path) {
-        const { data } = await supabase.storage.from('evidence').createSignedUrl(face.face_crop_path, 3600)
-        if (data?.signedUrl) cropUrl = data.signedUrl
-      }
-      if (face.known_faces?.reference_image_path) {
-        const { data } = await supabase.storage.from('watchlist').createSignedUrl(face.known_faces.reference_image_path, 3600)
-        if (data?.signedUrl) refUrl = data.signedUrl
-      }
+      const cropUrl = face.face_crop_path ? await getSignedUrl('ai-crops', face.face_crop_path) : null
+      const refUrl = face.known_faces?.reference_image_path ? await getSignedUrl('ai-crops', face.known_faces.reference_image_path) : null
       return { ...face, cropUrl, refUrl }
     })
   )
 
   const anprMatchesWithUrls = await Promise.all(
     (anprMatches || []).map(async (plate) => {
-      let cropUrl = null
-      if (plate.plate_crop_path) {
-        const { data } = await supabase.storage.from('evidence').createSignedUrl(plate.plate_crop_path, 3600)
-        if (data?.signedUrl) cropUrl = data.signedUrl
-      }
+      const cropUrl = plate.plate_crop_path ? await getSignedUrl('ai-crops', plate.plate_crop_path) : null
       return { ...plate, cropUrl }
     })
   )

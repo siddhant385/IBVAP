@@ -52,7 +52,9 @@ export function AiThreatSynthesisBanner({ faceMatches, anprMatches, severity }: 
               <Badge variant="destructive" className="text-[10px]">CRITICAL RISK</Badge>
             </div>
             <p className="text-xs text-muted-foreground">
-              {hasFaceMatch && faceMatches[0].known_faces?.name ? (
+              {hasFaceMatch && hasPlateMatch ? (
+                <>Matched suspect <strong className="text-foreground font-semibold">{faceMatches[0].known_faces?.name || 'Watchlist Target'}</strong> ({((faceMatches[0].similarity_score || 0) * 100).toFixed(1)}%) and flagged plate <strong className="text-foreground font-mono font-semibold">{anprMatches[0].plate_text}</strong>.</>
+              ) : hasFaceMatch && faceMatches[0].known_faces?.name ? (
                 <>Matched suspect <strong className="text-foreground font-semibold">{faceMatches[0].known_faces.name}</strong> with {((faceMatches[0].similarity_score || 0) * 100).toFixed(1)}% similarity.</>
               ) : hasPlateMatch ? (
                 <>Flagged vehicle plate <strong className="text-foreground font-mono font-semibold">{anprMatches[0].plate_text}</strong> identified on watchlist.</>
