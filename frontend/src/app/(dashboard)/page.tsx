@@ -5,8 +5,10 @@ import { RealtimeKpiRibbon } from '@/components/dashboard/RealtimeKpiRibbon'
 import { DynamicCommandMap } from '@/components/dashboard/DynamicCommandMap'
 import { DetectionAlertTrendChart, type HourlyTrendData } from '@/components/dashboard/DetectionAlertTrendChart'
 import { WatchlistMatchFeed } from '@/components/dashboard/WatchlistMatchFeed'
-import { AnalyticsPanel, type AnalyticsData, type CameraActivity, type ThreatBucket } from '@/components/dashboard/AnalyticsPanel'
 import { parsePointToLatLng } from '@/lib/coords'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Cpu } from 'lucide-react'
 
 const WINDOW_HOURS = 24
 const BUCKET_COUNT = 24
@@ -16,11 +18,8 @@ export const dynamic = 'force-dynamic'
 
 export default async function CommandCenterPage() {
   const supabase = await createClient()
-  // Force dynamic rendering so Date.now() per request is allowed
   await headers()
 
-  // Server component: this runs once per request on the server, not in render
-  // eslint-disable-next-line react-hooks/purity
   const now = Date.now()
   const windowStart = new Date(now - WINDOW_HOURS * 60 * 60 * 1000).toISOString()
   const dayStart = new Date(new Date().setHours(0, 0, 0, 0)).toISOString()
@@ -37,9 +36,7 @@ export default async function CommandCenterPage() {
     { data: windowedDetections },
     { data: windowedAlerts },
     { data: recentFaceResults },
-    { data: recentAnprResults },
-    { data: recentAlertsResolved },
-    { data: recentAlertsCreated }
+    { data: recentAnprResults }
   ] = await Promise.all([
     supabase.from('devices').select('*', { count: 'exact', head: true }),
     supabase.from('devices').select('*', { count: 'exact', head: true }).eq('is_online', true),
@@ -54,9 +51,7 @@ export default async function CommandCenterPage() {
     supabase.from('detections').select('id, camera_id, feature, timestamp').gte('timestamp', windowStart),
     supabase.from('alerts').select('id, camera_id, severity, status, timestamp').gte('timestamp', windowStart),
     supabase.from('face_results').select('id, similarity_score, created_at, matched_identity_id').not('matched_identity_id', 'is', null).order('created_at', { ascending: false }).limit(5),
-    supabase.from('anpr_results').select('id, plate_text, plate_confidence, created_at, is_flagged').eq('is_flagged', true).order('created_at', { ascending: false }).limit(5),
-    supabase.from('alerts').select('id, status, acknowledged_at, timestamp').not('acknowledged_at', 'is', null).gte('timestamp', windowStart),
-    supabase.from('alerts').select('id, severity, timestamp, status').gte('timestamp', windowStart),
+    supabase.from('anpr_results').select('id, plate_text, plate_confidence, created_at, is_flagged').eq('is_flagged', true).order('created_at', { ascending: false }).limit(5)
   ])
 
   // Build 24 hourly buckets anchored to `now`, rolling backward
@@ -87,75 +82,8 @@ export default async function CommandCenterPage() {
     if (i >= 0) buckets[i].alerts += 1
   }
 
-  // Analytics: top cameras by detection count
-  const camDetectionCount = new Map<string, number>()
-  const camAlertCount = new Map<string, number>()
-  for (const d of windowedDetections ?? []) {
-    if (!d.camera_id) continue
-    camDetectionCount.set(d.camera_id, (camDetectionCount.get(d.camera_id) ?? 0) + 1)
-  }
-  for (const a of windowedAlerts ?? []) {
-    if (!a.camera_id) continue
-    camAlertCount.set(a.camera_id, (camAlertCount.get(a.camera_id) ?? 0) + 1)
-  }
-  const camNameById = new Map((cameraMarkers ?? []).map((c) => [c.id, c.name ?? 'Camera']))
-  const camOnlineById = new Map((cameraMarkers ?? []).map((c) => [c.id, Boolean(c.is_online)]))
-  const topCameras: CameraActivity[] = Array.from(camDetectionCount.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 6)
-    .map(([id, count]) => ({
-      id,
-      name: camNameById.get(id) ?? 'Camera',
-      detections: count,
-      alerts: camAlertCount.get(id) ?? 0,
-      online: camOnlineById.get(id) ?? false,
-    }))
-
-  // Threat distribution
-  const threatCounts: Record<string, number> = { critical: 0, warning: 0, info: 0 }
-  for (const a of recentAlertsCreated ?? []) {
-    const s = (a.severity ?? 'info').toLowerCase()
-    threatCounts[s] = (threatCounts[s] ?? 0) + 1
-  }
-  const threatMix: ThreatBucket[] = [
-    { level: 'critical', count: threatCounts.critical, color: '#ef4444' },
-    { level: 'warning', count: threatCounts.warning, color: '#f59e0b' },
-    { level: 'info', count: threatCounts.info, color: '#3b82f6' },
-  ].filter((b) => b.count > 0)
-
-  // Feature mix
-  const featureCounts: Record<string, number> = {}
-  for (const d of windowedDetections ?? []) {
-    featureCounts[d.feature] = (featureCounts[d.feature] ?? 0) + 1
-  }
-  const featureMix = Object.entries(featureCounts)
-    .map(([feature, count]) => ({ feature, count }))
-    .sort((a, b) => b.count - a.count)
-
-  // Response time avg
-  const responseTimes: number[] = []
-  for (const a of recentAlertsResolved ?? []) {
-    if (a.acknowledged_at && a.timestamp) {
-      const diff = (new Date(a.acknowledged_at).getTime() - new Date(a.timestamp).getTime()) / 60000
-      if (diff >= 0 && diff < 24 * 60) responseTimes.push(diff)
-    }
-  }
-  const avgResponseMin = responseTimes.length > 0 ? responseTimes.reduce((s, x) => s + x, 0) / responseTimes.length : null
-  const resolvedCount = (recentAlertsCreated ?? []).filter((a) => a.status === 'resolved' || a.status === 'false_positive').length
-  const totalAlerts = (recentAlertsCreated ?? []).length
-
-  const analytics: AnalyticsData = {
-    topCameras,
-    threatMix,
-    featureMix,
-    avgResponseMin,
-    resolvedCount,
-    totalAlerts,
-  }
-
   const totalWatchlistMatches = (faceMatches || 0) + (plateMatches || 0)
 
-  // Initial watchlist feed items — use ISO strings to avoid hydration mismatch
   const initialMatches = [
     ...(recentFaceResults || []).map((f) => ({
       id: f.id,
@@ -209,10 +137,35 @@ export default async function CommandCenterPage() {
 
       <DetectionAlertTrendChart initialData={buckets} initialWindow="24h" />
 
-      <AnalyticsPanel initial={analytics} windowHours={WINDOW_HOURS} />
-
-      <div className="min-h-[300px]">
-        <WatchlistMatchFeed initialMatches={initialMatches} />
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+        <div className="col-span-4 min-h-[300px]">
+          <WatchlistMatchFeed initialMatches={initialMatches} />
+        </div>
+        <div className="col-span-3 min-h-[300px]">
+          <Card className="h-full border-border/50">
+            <CardHeader className="bg-muted/30 border-b border-border/50 py-3">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                <Cpu className="size-4 text-primary" /> Active Camera Nodes Overview
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 space-y-3">
+              {(cameraMarkers || []).slice(0, 5).map((cam) => (
+                <div key={cam.id} className="flex items-center justify-between p-2 rounded-md bg-muted/20 border border-border/40 text-xs">
+                  <div>
+                    <p className="font-semibold text-foreground">{cam.name || 'Unnamed Camera'}</p>
+                    <p className="text-muted-foreground">{cam.location || 'Unassigned Location'}</p>
+                  </div>
+                  <Badge variant={cam.is_online ? 'default' : 'secondary'} className={cam.is_online ? 'bg-green-600' : ''}>
+                    {cam.is_online ? 'ONLINE' : 'OFFLINE'}
+                  </Badge>
+                </div>
+              ))}
+              {!cameraMarkers?.length && (
+                <p className="text-xs text-muted-foreground text-center py-4">No camera nodes registered.</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )
