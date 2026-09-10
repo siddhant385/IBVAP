@@ -3,16 +3,11 @@ import { createClient } from '@/utils/supabase/server'
 import { RealtimeAlertFeed } from '@/app/(dashboard)/alerts/_components/RealtimeAlertFeed'
 import { RealtimeKpiRibbon } from '@/components/dashboard/RealtimeKpiRibbon'
 import { DynamicCommandMap } from '@/components/dashboard/DynamicCommandMap'
-import { DetectionAlertTrendChart, type HourlyTrendData } from '@/components/dashboard/DetectionAlertTrendChart'
 import { WatchlistMatchFeed } from '@/components/dashboard/WatchlistMatchFeed'
 import { parsePointToLatLng } from '@/lib/coords'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Cpu } from 'lucide-react'
-
-const WINDOW_HOURS = 24
-const BUCKET_COUNT = 24
-const BUCKET_MS = (WINDOW_HOURS * 60 * 60 * 1000) / BUCKET_COUNT
 
 export const dynamic = 'force-dynamic'
 
@@ -20,8 +15,6 @@ export default async function CommandCenterPage() {
   const supabase = await createClient()
   await headers()
 
-  const now = Date.now()
-  const windowStart = new Date(now - WINDOW_HOURS * 60 * 60 * 1000).toISOString()
   const dayStart = new Date(new Date().setHours(0, 0, 0, 0)).toISOString()
 
   const [
@@ -33,8 +26,6 @@ export default async function CommandCenterPage() {
     { count: faceMatches },
     { count: plateMatches },
     { data: cameraMarkers },
-    { data: windowedDetections },
-    { data: windowedAlerts },
     { data: recentFaceResults },
     { data: recentAnprResults }
   ] = await Promise.all([
@@ -48,39 +39,9 @@ export default async function CommandCenterPage() {
     supabase.from('face_results').select('*', { count: 'exact', head: true }).not('matched_identity_id', 'is', null),
     supabase.from('anpr_results').select('*', { count: 'exact', head: true }).eq('is_flagged', true),
     supabase.from('cameras').select('id, name, location, is_online, coordinates'),
-    supabase.from('detections').select('id, camera_id, feature, timestamp').gte('timestamp', windowStart),
-    supabase.from('alerts').select('id, camera_id, severity, status, timestamp').gte('timestamp', windowStart),
     supabase.from('face_results').select('id, similarity_score, created_at, matched_identity_id').not('matched_identity_id', 'is', null).order('created_at', { ascending: false }).limit(5),
     supabase.from('anpr_results').select('id, plate_text, plate_confidence, created_at, is_flagged').eq('is_flagged', true).order('created_at', { ascending: false }).limit(5)
   ])
-
-  // Build 24 hourly buckets anchored to `now`, rolling backward
-  const buckets: HourlyTrendData[] = []
-  const lastBucketStart = Math.floor(now / BUCKET_MS) * BUCKET_MS
-  for (let i = BUCKET_COUNT - 1; i >= 0; i--) {
-    const start = lastBucketStart - i * BUCKET_MS
-    buckets.push({
-      ts: new Date(start).toISOString(),
-      label: '',
-      detections: 0,
-      alerts: 0,
-    })
-  }
-
-  const findBucket = (ts: string) => {
-    const t = new Date(ts).getTime()
-    const idx = Math.floor((t - (lastBucketStart - (BUCKET_COUNT - 1) * BUCKET_MS)) / BUCKET_MS)
-    return idx >= 0 && idx < BUCKET_COUNT ? idx : -1
-  }
-
-  for (const d of windowedDetections ?? []) {
-    const i = findBucket(d.timestamp ?? '')
-    if (i >= 0) buckets[i].detections += 1
-  }
-  for (const a of windowedAlerts ?? []) {
-    const i = findBucket(a.timestamp ?? '')
-    if (i >= 0) buckets[i].alerts += 1
-  }
 
   const totalWatchlistMatches = (faceMatches || 0) + (plateMatches || 0)
 
@@ -134,8 +95,6 @@ export default async function CommandCenterPage() {
           <RealtimeAlertFeed />
         </div>
       </div>
-
-      <DetectionAlertTrendChart initialData={buckets} initialWindow="24h" />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
         <div className="col-span-4 min-h-[300px]">
