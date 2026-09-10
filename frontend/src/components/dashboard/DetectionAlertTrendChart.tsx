@@ -101,12 +101,12 @@ export function DetectionAlertTrendChart({ initialData, initialWindow = '24h' }:
   const peakBucket = display.reduce((m, b) => (b.detections + b.alerts > (m?.detections ?? 0) + (m?.alerts ?? 0) ? b : m), display[0])
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader>
-        <div className="flex items-start justify-between gap-2">
+    <Card className="border-border/50">
+      <CardHeader className="py-3 px-4">
+        <div className="flex items-center justify-between gap-2">
           <div>
-            <CardTitle className="text-base font-semibold">Threat & Detection Velocity</CardTitle>
-            <CardDescription className="flex items-center gap-2 mt-1 text-xs">
+            <CardTitle className="text-sm font-semibold">Threat & Detection Velocity</CardTitle>
+            <CardDescription className="flex items-center gap-2 mt-0.5 text-xs">
               <span className="inline-flex items-center gap-1 font-medium text-foreground">
                 <span className="size-2 rounded-full bg-blue-500 inline-block" />
                 {totalDetections.toLocaleString()} detections
@@ -119,7 +119,7 @@ export function DetectionAlertTrendChart({ initialData, initialWindow = '24h' }:
               {peakBucket && (totalDetections + totalAlerts > 0) && (
                 <>
                   <span>·</span>
-                  <span className="text-muted-foreground">
+                  <span className="text-muted-foreground hidden sm:inline">
                     Peak activity at <strong className="text-foreground font-semibold">{peakBucket.label}</strong>
                   </span>
                 </>
@@ -133,7 +133,7 @@ export function DetectionAlertTrendChart({ initialData, initialWindow = '24h' }:
                 size="sm"
                 variant={window === w ? 'default' : 'ghost'}
                 onClick={() => setWindow(w)}
-                className="h-7 px-2 text-xs"
+                className="h-6 px-2 text-[11px]"
               >
                 {w}
               </Button>
@@ -141,7 +141,7 @@ export function DetectionAlertTrendChart({ initialData, initialWindow = '24h' }:
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 min-h-[250px]">
+      <CardContent className="h-[180px] p-2 pt-0">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={display} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>

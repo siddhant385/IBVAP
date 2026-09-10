@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline, Polygon, useMap } from 'react-leaflet'
+import { useEffect, useState } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline, Polygon, GeoJSON, useMap } from 'react-leaflet'
 import { useTheme } from 'next-themes'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -30,9 +30,6 @@ interface GodsEyeMapProps {
 export function GodsEyeMap({ initialCameras = [], initialZones = [] }: GodsEyeMapProps) {
   const storeCameras = useGodsEyeStore((s) => s.cameras)
   const storeZones = useGodsEyeStore((s) => s.zones)
-  // Use store data if hydrated, otherwise fall back to initial props.
-  // This prevents the map from briefly centering on the default fallback
-  // before useGodsEyeInit's effect populates the store.
   const cameras = storeCameras.length > 0 ? storeCameras : initialCameras
   const zones = storeZones.length > 0 ? storeZones : initialZones
   const visible = useFilteredDetections()
@@ -40,6 +37,14 @@ export function GodsEyeMap({ initialCameras = [], initialZones = [] }: GodsEyeMa
   const setSelectedDetection = useGodsEyeStore((s) => s.setSelectedDetection)
   const selectedCameraId = useGodsEyeStore((s) => s.selectedCameraId)
   const { resolvedTheme } = useTheme()
+  const [geoJsonData, setGeoJsonData] = useState<GeoJSON.FeatureCollection | null>(null)
+
+  useEffect(() => {
+    fetch('/india-composite.geojson')
+      .then((res) => res.json())
+      .then((data) => setGeoJsonData(data))
+      .catch((err) => console.error('Failed to load India GeoJSON boundary in GodsEyeMap:', err))
+  }, [])
 
   const allPoints = cameras.map((c) => c.coordinates).filter((c): c is [number, number] => !!c)
   const center: [number, number] = allPoints[0] ?? [28.6139, 77.2090]
@@ -68,6 +73,19 @@ export function GodsEyeMap({ initialCameras = [], initialZones = [] }: GodsEyeMa
         attribution='&copy; OpenStreetMap'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+      {geoJsonData && (
+        <GeoJSON
+          key={`godseye-geojson-${resolvedTheme}`}
+          data={geoJsonData}
+          style={{
+            color: resolvedTheme === 'dark' ? '#38bdf8' : '#0284c7',
+            weight: 1.5,
+            fillColor: resolvedTheme === 'dark' ? '#0284c7' : '#38bdf8',
+            fillOpacity: 0.05,
+            dashArray: '3 3',
+          }}
+        />
+      )}
       {allPoints.length > 0 && <FitBounds points={allPoints} />}
       {zones.map((z) => {
         const ring = parseZone(z.polygon_wkt)
